@@ -6,7 +6,16 @@ import { Logo } from "@/components/logo";
 
 export const metadata: Metadata = { title: "참가자 로그인" };
 
-export default function LoginPage() {
+const accessMessages: Record<string, string> = {
+  invalid: "참가 링크가 올바르지 않거나 만료되었어요. 전화번호와 참가코드로 로그인해 주세요.",
+  pending: "아직 입금 확인이 완료되지 않았어요. 운영자에게 문의해 주세요.",
+  configuration: "서비스 연결이 준비 중이에요. 운영자에게 문의해 주세요.",
+};
+
+export default async function LoginPage({ searchParams }: PageProps<"/login">) {
+  const { access } = await searchParams;
+  const accessMessage = typeof access === "string" ? accessMessages[access] : undefined;
+
   return (
     <main className="min-h-screen bg-cream px-5 py-5 sm:px-8 sm:py-8">
       <div className="mx-auto max-w-md">
@@ -16,7 +25,10 @@ export default function LoginPage() {
           <h1 className="mt-6 font-display text-4xl font-black tracking-[-.05em]">다시 만났네요.</h1>
           <p className="mt-3 text-sm font-medium leading-6 text-ink/50">개인 참가 링크가 있다면 링크만 눌러도 로그인돼요.<br />링크를 잃어버렸다면 아래 정보로 들어오세요.</p>
         </div>
-        <section className="rounded-3xl border border-ink/10 bg-white p-6 shadow-sm sm:p-8"><LoginForm /></section>
+        <section className="rounded-3xl border border-ink/10 bg-white p-6 shadow-sm sm:p-8">
+          {accessMessage && <p role="alert" className="mb-5 rounded-2xl bg-coral/10 p-4 text-sm font-bold leading-6 text-coral">{accessMessage}</p>}
+          <LoginForm />
+        </section>
         <p className="mt-7 text-center text-xs font-medium text-ink/40">참가코드를 잃어버렸나요? 운영자에게 문의해 주세요.</p>
       </div>
     </main>

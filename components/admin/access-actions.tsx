@@ -18,7 +18,9 @@ function createParticipantMessage(nickname: string, link: string, recoveryCode: 
 ${link}
 
 링크로 접속이 어려우면 로그인 화면에서 전화번호와 참가코드를 입력해 주세요.
-참가코드: ${recoveryCode}`;
+참가코드: ${recoveryCode}
+
+아이폰에서 링크가 눌리지 않으면 발신자를 연락처에 추가하거나 '알려진 사람으로 표시'한 뒤 다시 눌러 주세요.`;
 }
 
 function IssuedAccessDetails({ link, recoveryCode, nickname, phone }: ParticipantContact & { link: string; recoveryCode: string }) {
@@ -30,6 +32,10 @@ function IssuedAccessDetails({ link, recoveryCode, nickname, phone }: Participan
   async function copyMessage() {
     await navigator.clipboard.writeText(message);
     setCopied(true);
+  }
+
+  function copyMessageForSms() {
+    void navigator.clipboard.writeText(message).then(() => setCopied(true));
   }
 
   return (
@@ -52,11 +58,11 @@ function IssuedAccessDetails({ link, recoveryCode, nickname, phone }: Participan
           {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
           {copied ? "복사됨" : "한 번에 복사"}
         </button>
-        <a href={`sms:${smsRecipient}`} className="inline-flex h-9 items-center gap-1.5 rounded-full border border-ink/10 bg-white px-3 font-extrabold text-ink hover:bg-cream">
-          <MessageSquareText className="size-3.5" /> 번호로 문자 열기
+        <a href={`sms:${smsRecipient}`} onClick={copyMessageForSms} className="inline-flex h-9 items-center gap-1.5 rounded-full border border-ink/10 bg-white px-3 font-extrabold text-ink hover:bg-cream">
+          <MessageSquareText className="size-3.5" /> 문구 복사하고 문자 열기
         </a>
       </div>
-      <p className="mt-2 text-[10px] font-semibold leading-4 text-ink/40">복사한 뒤 문자로 열면 받는 사람 번호가 자동으로 입력됩니다.</p>
+      <p className="mt-2 text-[10px] font-semibold leading-4 text-ink/40">Mac 문자 앱이 열리면 ⌘V로 문구를 붙여넣어 보내세요. 받는 사람 번호는 자동으로 입력됩니다.</p>
     </div>
   );
 }
