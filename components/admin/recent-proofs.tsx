@@ -5,25 +5,36 @@ import Image from "next/image";
 import { useState } from "react";
 import { setProofValidity } from "@/app/actions/admin";
 import type { ProofStatus, ProofType } from "@/lib/domain";
-import { formatKoreaDateTime } from "@/lib/date";
+import { formatKoreaDateTime, shiftDate } from "@/lib/date";
 
 interface RecentProof {
   id: string;
   imageUrl: string;
   content: string;
   created_at: string;
+  proofDate: string;
   status: ProofStatus;
   proof_type: ProofType;
   missionTitle?: string | null;
   participant: { nickname: string };
 }
 
-export function RecentProofs({ proofs }: { proofs: RecentProof[] }) {
+type DateFilter = "all" | "today" | "yesterday";
+
+export function RecentProofs({ proofs, today }: { proofs: RecentProof[]; today: string }) {
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<"newest" | "oldest" | "name-asc" | "name-desc">("newest");
+  const [dateFilter, setDateFilter] = useState<DateFilter>("all");
   const normalizedQuery = query.trim().toLocaleLowerCase("ko-KR");
+  const yesterday = shiftDate(today, -1);
   const visibleProofs = proofs
-    .filter((proof) => proof.participant.nickname.toLocaleLowerCase("ko-KR").includes(normalizedQuery))
+    .filter((proof) => {
+      const matchesName = proof.participant.nickname.toLocaleLowerCase("ko-KR").includes(normalizedQuery);
+      const matchesDate = dateFilter === "all"
+        || (dateFilter === "today" && proof.proofDate === today)
+        || (dateFilter === "yesterday" && proof.proofDate === yesterday);
+      return matchesName && matchesDate;
+    })
     .toSorted((left, right) => {
       if (sort === "oldest") return left.created_at.localeCompare(right.created_at);
       if (sort === "name-asc") return left.participant.nickname.localeCompare(right.participant.nickname, "ko-KR");
@@ -39,6 +50,14 @@ export function RecentProofs({ proofs }: { proofs: RecentProof[] }) {
           <p className="mt-1 text-sm font-medium text-ink/40">참가자별 인증을 찾거나 정렬하고, 부적절한 인증을 무효 처리할 수 있습니다.</p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
+          <label>
+            <span className="sr-only">인증 날짜</span>
+            <select value={dateFilter} onChange={(event) => setDateFilter(event.target.value as DateFilter)} className="h-11 w-full rounded-full border border-ink/10 bg-white px-4 text-sm font-bold outline-none focus:border-ink focus:ring-4 focus:ring-lime/30 sm:w-36">
+              <option value="all">전체 날짜</option>
+              <option value="today">오늘 인증</option>
+              <option value="yesterday">어제 인증</option>
+            </select>
+          </label>
           <label className="relative block">
             <span className="sr-only">참가자 이름 검색</span>
             <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-ink/35" />
@@ -56,7 +75,9 @@ export function RecentProofs({ proofs }: { proofs: RecentProof[] }) {
         </div>
       </div>
       <div className="mt-3 flex items-center justify-between text-xs font-semibold text-ink/35">
-        <span>{query.trim() ? `검색 결과 ${visibleProofs.length}건` : `최근 ${proofs.length}건`}</span>
+        <span>{dateFilter === "all"
+          ? (query.trim() ? `검색 결과 ${visibleProofs.length}건` : `최근 ${proofs.length}건`)
+          : `${dateFilter === "today" ? "오늘" : "어제"} 인증${query.trim() ? " 검색 결과" : ""} ${visibleProofs.length}건`}</span>
         <Camera className="size-5 text-coral" />
       </div>
       <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

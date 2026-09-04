@@ -1,6 +1,7 @@
 export const appConfig = {
   name: "GOAT.MORNING",
   url: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
+  participantUrl: process.env.PARTICIPANT_APP_URL ?? "https://goatmorning.vercel.app",
   bank: {
     name: process.env.BANK_NAME ?? "국민은행",
     account: process.env.BANK_ACCOUNT ?? "123456-12-123456",

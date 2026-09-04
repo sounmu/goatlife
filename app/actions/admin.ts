@@ -41,7 +41,7 @@ export async function confirmPayment(_: ActionState, formData: FormData): Promis
   return {
     ok: true,
     message: "입금 확인과 참가 활성화를 완료했습니다. 아래 정보를 참가자에게 전달하세요.",
-    data: { link: `${appConfig.url}/join/${linkToken}`, recoveryCode },
+    data: { link: `${appConfig.participantUrl}/join/${linkToken}`, recoveryCode },
   };
 }
 
@@ -66,7 +66,7 @@ export async function reissueAccess(_: ActionState, formData: FormData): Promise
   ]);
   if (tokenError || participantError) return { message: "접속 정보 재발급에 실패했습니다." };
   revalidatePath("/admin");
-  return { ok: true, message: "접속 정보를 재발급했습니다.", data: { link: `${appConfig.url}/join/${linkToken}`, recoveryCode } };
+  return { ok: true, message: "접속 정보를 재발급했습니다.", data: { link: `${appConfig.participantUrl}/join/${linkToken}`, recoveryCode } };
 }
 
 export async function renameParticipant(_: ActionState, formData: FormData): Promise<ActionState> {

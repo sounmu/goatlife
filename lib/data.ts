@@ -204,6 +204,7 @@ export async function getAdminDashboard() {
       id: proof.id,
       content: proof.content,
       created_at: proof.created_at,
+      proofDate: proof.proof_date,
       status: proof.status,
       proof_type: proof.proof_type,
       participant: Array.isArray(proof.participants) ? proof.participants[0] : proof.participants,
