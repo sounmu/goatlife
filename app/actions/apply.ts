@@ -15,8 +15,11 @@ export async function applyForChallenge(_: ActionState, formData: FormData): Pro
   });
   if (!parsed.success) return { fieldErrors: fieldErrors(parsed.error) };
 
+  let participantStartDate: string | undefined;
+  let participantEndDate: string | undefined;
   try {
-    const { error } = await getSupabaseAdmin().rpc("apply_to_challenge", {
+    const supabase = getSupabaseAdmin();
+    const { data: participantId, error } = await supabase.rpc("apply_to_challenge", {
       p_challenge_id: parsed.data.challengeId,
       p_nickname: parsed.data.nickname,
       p_phone: parsed.data.phone,
@@ -24,14 +27,28 @@ export async function applyForChallenge(_: ActionState, formData: FormData): Pro
     });
     if (error) {
       if (error.message.includes("already_applied")) return { message: "이미 이 챌린지에 신청한 전화번호예요." };
+      if (error.message.includes("application_closed")) return { message: "현재는 참가 신청 기간이 아니에요." };
       if (error.message.includes("challenge_not_open")) return { message: "현재 참가 신청을 받고 있지 않아요." };
       throw error;
     }
+    const { data: participation } = await supabase
+      .from("challenge_participants")
+      .select("start_date, end_date")
+      .eq("challenge_id", parsed.data.challengeId)
+      .eq("participant_id", participantId)
+      .single();
+    participantStartDate = participation?.start_date;
+    participantEndDate = participation?.end_date;
   } catch (error) {
     if (error instanceof ConfigurationError) return { message: "신청 접수를 열기 위해 Supabase 환경변수를 설정해 주세요." };
     console.error("applyForChallenge", error);
     return { message: "신청을 저장하지 못했어요. 잠시 후 다시 시도해 주세요." };
   }
 
-  redirect(`/apply/complete?nickname=${encodeURIComponent(parsed.data.nickname)}`);
+  const query = new URLSearchParams({ nickname: parsed.data.nickname });
+  if (participantStartDate && participantEndDate) {
+    query.set("start", participantStartDate);
+    query.set("end", participantEndDate);
+  }
+  redirect(`/apply/complete?${query.toString()}`);
 }

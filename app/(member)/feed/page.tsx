@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import { Camera, Flame } from "lucide-react";
+import { Camera, Flame, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { requireParticipant } from "@/lib/auth/participant";
 import { formatKoreaDateTime } from "@/lib/date";
@@ -23,12 +23,16 @@ export default async function FeedPage() {
           <article key={proof.id} className="overflow-hidden rounded-[2rem] border border-ink/10 bg-white shadow-sm">
             <div className="flex items-center justify-between px-5 py-4">
               <div><p className="font-display text-base font-black">{proof.nickname}</p><p className="mt-0.5 text-[11px] font-semibold text-ink/40">{formatKoreaDateTime(proof.createdAt)}</p></div>
-              <div className="flex items-center gap-1.5 rounded-full bg-lime px-3 py-1.5 text-[11px] font-extrabold"><Flame className="size-3.5" fill="currentColor" /> {proof.streak}일 연속</div>
+              {proof.proofType === "MORNING" ? (
+                <div className="flex items-center gap-1.5 rounded-full bg-lime px-3 py-1.5 text-[11px] font-extrabold"><Flame className="size-3.5" fill="currentColor" /> {proof.streak}일 연속</div>
+              ) : (
+                <div className="flex items-center gap-1.5 rounded-full bg-coral/10 px-3 py-1.5 text-[11px] font-extrabold text-coral"><Sparkles className="size-3.5" /> 랜덤 미션</div>
+              )}
             </div>
             <div className="relative aspect-square w-full bg-ink/5 sm:aspect-[4/3]">
               <Image src={`/api/proofs/${proof.id}/image`} alt={`${proof.nickname}님의 ${proof.proofDate} 인증 사진`} fill sizes="(max-width: 768px) 100vw, 704px" unoptimized className="object-cover" />
             </div>
-            <p className="px-5 py-5 text-sm font-semibold leading-6 text-ink/75">{proof.content}</p>
+            <div className="px-5 py-5">{proof.missionTitle && <p className="mb-1 text-xs font-extrabold text-coral">{proof.missionTitle}</p>}<p className="text-sm font-semibold leading-6 text-ink/75">{proof.content}</p></div>
           </article>
         )) : (
           <div className="rounded-[2rem] border border-dashed border-ink/15 bg-white/60 px-6 py-16 text-center"><Camera className="mx-auto size-8 text-ink/25" /><h2 className="mt-4 font-display text-xl font-black">아직 첫 인증을 기다리고 있어요.</h2><p className="mt-2 text-sm font-medium text-ink/45">오늘의 첫 번째 GOAT가 되어보세요.</p><Link href="/proof/new" className="mt-6 inline-flex h-12 items-center rounded-full bg-coral px-6 text-sm font-extrabold text-white">첫 인증 남기기</Link></div>

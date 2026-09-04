@@ -1,5 +1,5 @@
 export const appConfig = {
-  name: "GOAT.LIFE",
+  name: "GOAT.MORNING",
   url: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
   bank: {
     name: process.env.BANK_NAME ?? "국민은행",

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculateLiveStats, calculateStats, hasFailed, isWithinProofWindow, koreaDate, proofDateForWindow } from "./date";
+import { calculateLiveStats, calculateStats, hasFailed, isDateWithin, isWithinProofWindow, koreaDate, participantPeriodForApplication, proofDateForWindow } from "./date";
 
 const challenge = {
   start_date: "2026-09-10",
@@ -52,5 +52,32 @@ describe("failure calculation", () => {
     expect(beforeClose.eligibleDays).toBe(2);
     expect(beforeClose.successCount).toBe(2);
     expect(beforeClose.failureCount).toBe(0);
+  });
+});
+
+describe("participant-specific challenge period", () => {
+  it("starts on September 6 for early applicants, then the day after applying", () => {
+    expect(participantPeriodForApplication("2026-09-04", 14, "2026-09-06")).toEqual({
+      startDate: "2026-09-06",
+      endDate: "2026-09-19",
+    });
+    expect(participantPeriodForApplication("2026-09-05", 14, "2026-09-06")).toEqual({
+      startDate: "2026-09-06",
+      endDate: "2026-09-19",
+    });
+    expect(participantPeriodForApplication("2026-09-06", 14, "2026-09-06")).toEqual({
+      startDate: "2026-09-07",
+      endDate: "2026-09-20",
+    });
+    expect(participantPeriodForApplication("2026-09-13", 14, "2026-09-06")).toEqual({
+      startDate: "2026-09-14",
+      endDate: "2026-09-27",
+    });
+  });
+
+  it("treats both application-period boundaries as inclusive", () => {
+    expect(isDateWithin("2026-09-04", "2026-09-04", "2026-09-13")).toBe(true);
+    expect(isDateWithin("2026-09-13", "2026-09-04", "2026-09-13")).toBe(true);
+    expect(isDateWithin("2026-09-14", "2026-09-04", "2026-09-13")).toBe(false);
   });
 });

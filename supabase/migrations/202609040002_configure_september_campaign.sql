@@ -9,10 +9,10 @@ values (
   '14일 미라클 모닝',
   '매일 아침 5시부터 8시 사이, 일어난 뒤 한 일을 사진과 짧은 기록으로 남겨요.',
   10000,
-  '2026-09-04',
+  '2026-09-06',
   '2026-09-13',
   14,
-  '2026-09-06',
+  '2026-09-07',
   '2026-09-27',
   2,
   'ABOVE',
@@ -35,15 +35,8 @@ on conflict (id) do update set
   proof_end_time = excluded.proof_end_time,
   status = excluded.status;
 
-update public.challenge_participants cp
-set
-  start_date = greatest((cp.joined_at at time zone 'Asia/Seoul')::date + 1, date '2026-09-06'),
-  end_date = greatest((cp.joined_at at time zone 'Asia/Seoul')::date + 1, date '2026-09-06') + 13
-where cp.challenge_id = '11111111-1111-4111-8111-111111111111';
-
 insert into public.daily_random_missions (challenge_id, mission_date, title, description)
 values
-  ('11111111-1111-4111-8111-111111111111', '2026-09-06', '오늘의 다짐 한 줄', '이번 14일 동안 이루고 싶은 변화를 한 줄로 적어보세요.'),
   ('11111111-1111-4111-8111-111111111111', '2026-09-07', '물 두 잔 마시기', '천천히 물 두 잔을 마시고 몸을 깨워보세요.'),
   ('11111111-1111-4111-8111-111111111111', '2026-09-08', '10분 산책하기', '가까운 곳을 10분 동안 걸으며 주변을 살펴보세요.'),
   ('11111111-1111-4111-8111-111111111111', '2026-09-09', '책 10쪽 읽기', '읽고 싶었던 책을 펼쳐 딱 10쪽만 읽어보세요.'),

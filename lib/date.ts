@@ -51,6 +51,19 @@ export function shiftDate(date: string, days: number) {
   return new Date((dayNumber(date) + days) * 86_400_000).toISOString().slice(0, 10);
 }
 
+export function participantPeriodForApplication(applicationDate: string, durationDays: number, earliestStartDate: string) {
+  const dayAfterApplication = shiftDate(applicationDate, 1);
+  const startDate = dayAfterApplication < earliestStartDate ? earliestStartDate : dayAfterApplication;
+  return {
+    startDate,
+    endDate: shiftDate(startDate, Math.max(1, durationDays) - 1),
+  };
+}
+
+export function isDateWithin(date: string, start: string, end: string) {
+  return date >= start && date <= end;
+}
+
 export function proofDateForWindow(start: string, end: string, date = new Date()) {
   const today = koreaDate(date);
   if (timeToMinutes(start) > timeToMinutes(end) && koreaMinutes(date) <= timeToMinutes(end)) {

@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
-import Image from "next/image";
-import { BadgeCheck, Camera, CircleDollarSign, LogOut, RefreshCw, UsersRound } from "lucide-react";
-import { refreshOutcomes, setProofValidity } from "@/app/actions/admin";
+import { BadgeCheck, CircleDollarSign, LogOut, RefreshCw, UsersRound } from "lucide-react";
+import { refreshOutcomes } from "@/app/actions/admin";
 import { adminLogout } from "@/app/actions/auth";
+import { ConfirmPaymentForm, ReissueAccessForm } from "@/components/admin/access-actions";
+import { ParticipantManagement } from "@/components/admin/participant-management";
+import { RecentProofs } from "@/components/admin/recent-proofs";
+import { Logo } from "@/components/logo";
 import { requireAdmin } from "@/lib/auth/admin";
 import { getAdminDashboard } from "@/lib/data";
-import { formatKoreaDateTime } from "@/lib/date";
+import { formatKoreaDate } from "@/lib/date";
 import { formatPhone, formatWon } from "@/lib/utils";
-import { ConfirmPaymentForm, ReissueAccessForm } from "@/components/admin/access-actions";
-import { Logo } from "@/components/logo";
 
 export const metadata: Metadata = { title: "관리자" };
 export const dynamic = "force-dynamic";
@@ -36,9 +37,9 @@ export default async function AdminPage() {
           </div>
         </section>
 
-        <section className="mt-12"><h2 className="font-display text-2xl font-black">참가자 현황</h2><div className="mt-5 overflow-x-auto rounded-3xl border border-ink/10 bg-white"><table className="w-full min-w-[920px] text-left text-sm"><thead className="bg-cream/70 text-[11px] font-extrabold text-ink/45"><tr><th className="px-5 py-4">참가자</th><th className="px-5 py-4">챌린지</th><th className="px-5 py-4">인증</th><th className="px-5 py-4">실패</th><th className="px-5 py-4">상태</th><th className="px-5 py-4">접속 정보</th></tr></thead><tbody>{participants.map((row) => <tr key={row.id} className="border-t border-ink/8 align-top"><td className="px-5 py-5"><p className="font-extrabold">{row.participant.nickname}</p><p className="mt-1 text-xs text-ink/40">{formatPhone(row.participant.phone)}</p><p className="mt-1 text-[10px] text-ink/30">코드 끝자리 {row.participant.recovery_code_hint ?? "—"}</p></td><td className="px-5 py-5 text-xs font-semibold">{row.challenge.title}</td><td className="px-5 py-5 font-extrabold">{row.stats.successCount}회</td><td className="px-5 py-5 font-extrabold text-coral">{row.stats.failureCount}회</td><td className="px-5 py-5"><span className={`rounded-full px-3 py-1 text-[10px] font-extrabold ${row.participant_status === "ACTIVE" ? "bg-lime" : row.participant_status === "FAILED" ? "bg-coral/10 text-coral" : "bg-ink/5"}`}>{statusLabels[row.participant_status]}</span></td><td className="px-5 py-5">{row.payment_status === "PAID" ? <ReissueAccessForm participantId={row.participant.id} /> : <span className="text-xs text-ink/30">입금 확인 전</span>}</td></tr>)}</tbody></table></div></section>
+        <section className="mt-12"><h2 className="font-display text-2xl font-black">참가자 현황</h2><div className="mt-5 overflow-x-auto rounded-3xl border border-ink/10 bg-white"><table className="w-full min-w-[1180px] text-left text-sm"><thead className="bg-cream/70 text-[11px] font-extrabold text-ink/45"><tr><th className="px-5 py-4">참가자</th><th className="px-5 py-4">개인 진행 기간</th><th className="px-5 py-4">아침 인증</th><th className="px-5 py-4">실패</th><th className="px-5 py-4">상태</th><th className="px-5 py-4">접속 정보</th><th className="px-5 py-4">관리</th></tr></thead><tbody>{participants.map((row) => <tr key={row.id} className="border-t border-ink/8 align-top"><td className="px-5 py-5"><p className="font-extrabold">{row.participant.nickname}</p><p className="mt-1 text-xs text-ink/40">{formatPhone(row.participant.phone)}</p><p className="mt-1 text-[10px] text-ink/30">코드 끝자리 {row.participant.recovery_code_hint ?? "—"}</p></td><td className="px-5 py-5"><p className="text-xs font-semibold">{formatKoreaDate(row.start_date)}–{formatKoreaDate(row.end_date)}</p><p className="mt-1 text-[10px] text-ink/35">{row.challenge.title}</p></td><td className="px-5 py-5 font-extrabold">{row.stats.successCount}회</td><td className="px-5 py-5 font-extrabold text-coral">{row.stats.failureCount}회</td><td className="px-5 py-5"><span className={`rounded-full px-3 py-1 text-[10px] font-extrabold ${row.participant_status === "ACTIVE" ? "bg-lime" : row.participant_status === "FAILED" ? "bg-coral/10 text-coral" : "bg-ink/5"}`}>{statusLabels[row.participant_status]}</span></td><td className="px-5 py-5">{row.payment_status === "PAID" ? <ReissueAccessForm participantId={row.participant.id} /> : <span className="text-xs text-ink/30">입금 확인 전</span>}</td><td className="px-5 py-5"><ParticipantManagement key={row.participant.nickname} participantId={row.participant.id} nickname={row.participant.nickname} /></td></tr>)}</tbody></table></div></section>
 
-        <section className="mt-12"><div className="flex items-center justify-between"><div><h2 className="font-display text-2xl font-black">최근 인증</h2><p className="mt-1 text-sm font-medium text-ink/40">부적절한 인증은 무효로 전환할 수 있습니다.</p></div><Camera className="size-5 text-coral" /></div><div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{proofs.map((proof) => <article key={proof.id} className="overflow-hidden rounded-3xl border border-ink/10 bg-white"><div className="relative aspect-[4/3] bg-ink/5"><Image src={`/api/proofs/${proof.id}/image`} alt={`${proof.participant.nickname}님의 인증`} fill sizes="(max-width: 640px) 100vw, 33vw" unoptimized className="object-cover" /></div><div className="p-5"><div className="flex items-start justify-between gap-3"><div><p className="font-extrabold">{proof.participant.nickname}</p><p className="mt-1 text-[10px] font-medium text-ink/35">{formatKoreaDateTime(proof.created_at)}</p></div><span className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold ${proof.status === "VALID" ? "bg-lime" : "bg-coral/10 text-coral"}`}>{proof.status === "VALID" ? "인정" : "무효"}</span></div><p className="mt-4 line-clamp-2 text-xs font-medium leading-5 text-ink/55">{proof.content}</p><form action={setProofValidity} className="mt-4"><input type="hidden" name="proofId" value={proof.id} /><input type="hidden" name="status" value={proof.status === "VALID" ? "INVALID" : "VALID"} /><button className="text-xs font-extrabold text-coral underline underline-offset-4">{proof.status === "VALID" ? "이 인증 무효 처리" : "유효로 되돌리기"}</button></form></div></article>)}{!proofs.length && <p className="col-span-full rounded-3xl bg-white p-10 text-center text-sm font-medium text-ink/35">아직 등록된 인증이 없습니다.</p>}</div></section>
+        <RecentProofs proofs={proofs} />
       </div>
     </main>
   );

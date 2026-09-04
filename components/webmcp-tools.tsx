@@ -12,7 +12,7 @@ export function WebMcpTools() {
     void Promise.resolve(context.registerTool({
       name: "start_challenge_application",
       title: "챌린지 참가 신청 시작",
-      description: "GOAT.LIFE 참가 신청 화면으로 이동해 닉네임, 전화번호, 입금자명을 입력할 수 있게 합니다. 신청을 제출하지는 않습니다.",
+      description: "GOAT.MORNING 참가 신청 화면으로 이동해 닉네임, 전화번호, 입금자명을 입력할 수 있게 합니다. 신청을 제출하지는 않습니다.",
       inputSchema: { type: "object", properties: {}, additionalProperties: false },
       annotations: { readOnlyHint: true, untrustedContentHint: false },
       execute() {

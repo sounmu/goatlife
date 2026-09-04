@@ -7,6 +7,7 @@ import { appConfig } from "@/lib/config";
 import { calculateLiveStats, koreaDate } from "@/lib/date";
 import { createRecoveryCode, hashToken, randomToken } from "@/lib/security";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { deleteParticipantSchema, fieldErrors, renameParticipantSchema } from "@/lib/validation";
 
 export async function confirmPayment(_: ActionState, formData: FormData): Promise<ActionState> {
   await requireAdmin();
@@ -68,6 +69,67 @@ export async function reissueAccess(_: ActionState, formData: FormData): Promise
   return { ok: true, message: "접속 정보를 재발급했습니다.", data: { link: `${appConfig.url}/join/${linkToken}`, recoveryCode } };
 }
 
+export async function renameParticipant(_: ActionState, formData: FormData): Promise<ActionState> {
+  await requireAdmin();
+  const parsed = renameParticipantSchema.safeParse({
+    participantId: formData.get("participantId"),
+    nickname: formData.get("nickname"),
+  });
+  if (!parsed.success) return { fieldErrors: fieldErrors(parsed.error) };
+
+  const { data, error } = await getSupabaseAdmin()
+    .from("participants")
+    .update({ nickname: parsed.data.nickname })
+    .eq("id", parsed.data.participantId)
+    .select("id")
+    .maybeSingle();
+  if (error || !data) return { message: "참가자 이름을 변경하지 못했습니다." };
+
+  revalidatePath("/admin");
+  revalidatePath("/feed");
+  revalidatePath("/me");
+  return { ok: true, message: "참가자 이름을 변경했습니다." };
+}
+
+export async function deleteParticipantData(_: ActionState, formData: FormData): Promise<ActionState> {
+  await requireAdmin();
+  const parsed = deleteParticipantSchema.safeParse({
+    participantId: formData.get("participantId"),
+    confirmation: formData.get("confirmation"),
+  });
+  if (!parsed.success) return { fieldErrors: fieldErrors(parsed.error) };
+
+  const supabase = getSupabaseAdmin();
+  const { data: participant, error: participantError } = await supabase
+    .from("participants")
+    .select("nickname")
+    .eq("id", parsed.data.participantId)
+    .maybeSingle();
+  if (participantError || !participant) return { message: "삭제할 참가자를 찾을 수 없습니다." };
+  if (participant.nickname !== parsed.data.confirmation) {
+    return { fieldErrors: { confirmation: ["참가자 이름을 정확히 입력해 주세요."] } };
+  }
+
+  const { data: imagePaths, error: deleteError } = await supabase.rpc("delete_participant_data", {
+    p_participant_id: parsed.data.participantId,
+  });
+  if (deleteError) {
+    console.error("deleteParticipantData", deleteError);
+    return { message: "참가자 데이터를 삭제하지 못했습니다. 최신 마이그레이션 적용 여부를 확인해 주세요." };
+  }
+
+  const paths = Array.isArray(imagePaths) ? imagePaths.filter((path): path is string => typeof path === "string") : [];
+  if (paths.length) {
+    const { error: storageError } = await supabase.storage.from(appConfig.proofBucket).remove(paths);
+    if (storageError) console.error("deleteParticipantData storage cleanup", storageError);
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/feed");
+  revalidatePath("/me");
+  return { ok: true, message: "참가자와 관련 데이터를 삭제했습니다." };
+}
+
 export async function setProofValidity(formData: FormData) {
   await requireAdmin();
   const proofId = String(formData.get("proofId") ?? "");
@@ -86,7 +148,7 @@ export async function refreshOutcomes(): Promise<void> {
   const supabase = getSupabaseAdmin();
   const { data: rows } = await supabase
     .from("challenge_participants")
-    .select("id, participant_id, participant_status, challenges!inner(*)")
+    .select("id, participant_id, participant_status, start_date, end_date, challenges!inner(*)")
     .eq("payment_status", "PAID")
     .in("participant_status", ["ACTIVE", "SUCCESS", "FAILED"]);
   for (const raw of rows ?? []) {
@@ -97,11 +159,13 @@ export async function refreshOutcomes(): Promise<void> {
       .select("proof_date")
       .eq("participant_id", raw.participant_id)
       .eq("challenge_id", challenge.id)
+      .eq("proof_type", "MORNING")
       .eq("status", "VALID");
-    const stats = calculateLiveStats(challenge, (proofs ?? []).map((proof) => proof.proof_date));
+    const participantChallenge = { ...challenge, start_date: raw.start_date, end_date: raw.end_date };
+    const stats = calculateLiveStats(participantChallenge, (proofs ?? []).map((proof) => proof.proof_date));
     let next: ParticipantStatus = "ACTIVE";
     if (stats.hasFailed) next = "FAILED";
-    else if (koreaDate() > challenge.end_date) next = "SUCCESS";
+    else if (koreaDate() > raw.end_date) next = "SUCCESS";
     if (next !== raw.participant_status) await supabase.from("challenge_participants").update({ participant_status: next }).eq("id", raw.id);
   }
   revalidatePath("/admin");
