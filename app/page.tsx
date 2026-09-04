@@ -10,6 +10,7 @@ import {
   TicketPercent,
 } from "lucide-react";
 import Link from "next/link";
+import { getParticipantSession } from "@/lib/auth/participant";
 import { formatKoreaDate, inclusiveDays, koreaDate } from "@/lib/date";
 import { demoChallenge, getActiveChallenge } from "@/lib/data";
 import { formatWon } from "@/lib/utils";
@@ -17,7 +18,8 @@ import { formatWon } from "@/lib/utils";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const challenge = (await getActiveChallenge()) ?? demoChallenge;
+  const [challengeData, participant] = await Promise.all([getActiveChallenge(), getParticipantSession()]);
+  const challenge = challengeData ?? demoChallenge;
   const totalDays = challenge.duration_days;
   const today = koreaDate();
   const countdown = Math.max(0, inclusiveDays(today, challenge.application_start_date) - 1);
@@ -43,8 +45,8 @@ export default async function Home() {
           <Link href="/" className="font-display text-lg font-black tracking-[-0.04em] text-ink">
             GOAT<span className="text-coral">.</span>MORNING
           </Link>
-          <Link href="/login" className="text-sm font-bold text-ink/65 transition hover:text-ink">
-            참가자 로그인
+          <Link href={participant ? "/feed" : "/login"} className="text-sm font-bold text-ink/65 transition hover:text-ink">
+            {participant ? "내 챌린지" : "참가자 로그인"}
           </Link>
         </nav>
 
@@ -66,8 +68,8 @@ export default async function Home() {
               작은 기록을 쌓아 끝까지 해내면 보증금은 다시 당신에게 돌아갑니다.
             </p>
             <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
-              <Link href="/apply" className="group inline-flex h-14 items-center justify-center gap-2 rounded-full bg-ink px-7 text-base font-extrabold text-white shadow-[0_10px_30px_rgba(25,34,31,.2)] transition hover:-translate-y-0.5 hover:bg-coral">
-                {formatWon(challenge.deposit_amount)} 걸고 참여하기
+              <Link href={participant ? "/feed" : "/apply"} className="group inline-flex h-14 items-center justify-center gap-2 rounded-full bg-ink px-7 text-base font-extrabold text-white shadow-[0_10px_30px_rgba(25,34,31,.2)] transition hover:-translate-y-0.5 hover:bg-coral">
+                {participant ? "내 챌린지로 돌아가기" : `${formatWon(challenge.deposit_amount)} 걸고 참여하기`}
                 <ArrowRight className="size-4 transition group-hover:translate-x-1" />
               </Link>
               <span className="text-center text-xs font-semibold text-ink/45 sm:text-left">{countdown > 0 ? `신청 시작까지 ${countdown}일` : applicationOpen ? "지금 신청할 수 있어요" : "이번 신청은 마감됐어요"}</span>
@@ -184,8 +186,8 @@ export default async function Home() {
           <div className="mt-6 flex flex-col items-center rounded-[2rem] bg-lime px-6 py-12 text-center sm:py-16">
             <p className="text-sm font-extrabold text-ink/55">이번에는 정말 끝까지</p>
             <h2 className="mt-3 font-display text-4xl font-black tracking-[-.05em] text-ink sm:text-6xl">{totalDays}일 뒤, 달라진 나.</h2>
-            <Link href="/apply" className="mt-8 inline-flex h-14 items-center justify-center gap-2 rounded-full bg-ink px-7 text-base font-extrabold text-white transition hover:-translate-y-0.5 hover:bg-coral">
-              지금 참여하기 <ArrowRight className="size-4" />
+            <Link href={participant ? "/feed" : "/apply"} className="mt-8 inline-flex h-14 items-center justify-center gap-2 rounded-full bg-ink px-7 text-base font-extrabold text-white transition hover:-translate-y-0.5 hover:bg-coral">
+              {participant ? "내 챌린지로 돌아가기" : "지금 참여하기"} <ArrowRight className="size-4" />
             </Link>
           </div>
         </div>

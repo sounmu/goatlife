@@ -9,6 +9,7 @@ import { formatKoreaDateTime } from "@/lib/date";
 
 interface RecentProof {
   id: string;
+  imageUrl: string;
   content: string;
   created_at: string;
   status: ProofStatus;
@@ -61,7 +62,7 @@ export function RecentProofs({ proofs }: { proofs: RecentProof[] }) {
       <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {visibleProofs.map((proof) => (
           <article key={proof.id} className="overflow-hidden rounded-3xl border border-ink/10 bg-white">
-            <div className="relative aspect-[4/3] bg-ink/5"><Image src={`/api/proofs/${proof.id}/image`} alt={`${proof.participant.nickname}님의 인증`} fill sizes="(max-width: 640px) 100vw, 33vw" unoptimized className="object-cover" /></div>
+            <div className="relative aspect-[4/3] bg-ink/5"><Image src={proof.imageUrl} alt={`${proof.participant.nickname}님의 인증`} fill sizes="(max-width: 640px) 100vw, 33vw" unoptimized className="object-cover" /></div>
             <div className="p-5">
               <div className="flex items-start justify-between gap-3">
                 <div>

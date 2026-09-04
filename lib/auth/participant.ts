@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { appConfig } from "@/lib/config";
@@ -29,7 +30,9 @@ export async function issueParticipantSession(participantId: string) {
   });
 }
 
-export async function getParticipantSession(): Promise<ParticipantSession | null> {
+// React invalidates this cache after each server request. It only deduplicates the
+// layout and page lookups that happen while rendering the same request.
+export const getParticipantSession = cache(async (): Promise<ParticipantSession | null> => {
   const token = (await cookies()).get(PARTICIPANT_COOKIE)?.value;
   if (!token) return null;
   const supabase = getSupabaseAdmin();
@@ -61,7 +64,7 @@ export async function getParticipantSession(): Promise<ParticipantSession | null
     challengeId: participation.challenge_id,
     participantStatus: participation.participant_status as ParticipantStatus,
   };
-}
+});
 
 export async function requireParticipant() {
   const session = await getParticipantSession();

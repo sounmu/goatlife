@@ -2,8 +2,25 @@ import "server-only";
 
 import { calculateLiveStats, calculateStreak } from "@/lib/date";
 import type { Challenge, DailyRandomMission, ParticipantStatus, ProofStatus, ProofType } from "@/lib/domain";
-import { isSupabaseConfigured } from "@/lib/config";
+import { appConfig, isSupabaseConfigured } from "@/lib/config";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
+
+const PROOF_IMAGE_URL_TTL_SECONDS = 60 * 15;
+
+async function getSignedProofImageUrls(paths: string[]) {
+  if (!paths.length) return new Map<string, string>();
+
+  const { data } = await getSupabaseAdmin()
+    .storage
+    .from(appConfig.proofBucket)
+    .createSignedUrls(paths, PROOF_IMAGE_URL_TTL_SECONDS);
+
+  const urls = new Map<string, string>();
+  for (const image of data ?? []) {
+    if (image.path && image.signedUrl) urls.set(image.path, image.signedUrl);
+  }
+  return urls;
+}
 
 export const demoChallenge: Challenge = {
   id: "11111111-1111-4111-8111-111111111111",
@@ -38,6 +55,7 @@ export async function getActiveChallenge(): Promise<Challenge | null> {
 interface FeedProofRow {
   id: string;
   participant_id: string;
+  image_path: string;
   proof_date: string;
   content: string;
   created_at: string;
@@ -48,28 +66,24 @@ interface FeedProofRow {
 
 export async function getFeed(challengeId: string) {
   const supabase = getSupabaseAdmin();
-  const [{ data: proofs, error }, { data: allDates }] = await Promise.all([
-    supabase
-      .from("proofs")
-      .select("id, participant_id, proof_date, content, created_at, proof_type, participants!inner(nickname), daily_random_missions(title)")
-      .eq("challenge_id", challengeId)
-      .eq("status", "VALID")
-      .order("created_at", { ascending: false })
-      .limit(40),
-    supabase
-      .from("proofs")
-      .select("participant_id, proof_date")
-      .eq("challenge_id", challengeId)
-      .eq("proof_type", "MORNING")
-      .eq("status", "VALID"),
-  ]);
+  const { data: proofs, error } = await supabase
+    .from("proofs")
+    .select("id, participant_id, image_path, proof_date, content, created_at, proof_type, participants!inner(nickname), daily_random_missions(title)")
+    .eq("challenge_id", challengeId)
+    .eq("status", "VALID")
+    .order("created_at", { ascending: false });
   if (error) throw error;
 
+  const proofRows = (proofs ?? []) as unknown as FeedProofRow[];
   const datesByParticipant = new Map<string, string[]>();
-  for (const row of allDates ?? []) {
+  for (const row of proofRows) {
+    if (row.proof_type !== "MORNING") continue;
     datesByParticipant.set(row.participant_id, [...(datesByParticipant.get(row.participant_id) ?? []), row.proof_date]);
   }
-  return ((proofs ?? []) as unknown as FeedProofRow[]).map((proof) => ({
+  const displayedProofs = proofRows.slice(0, 40);
+  const imageUrls = await getSignedProofImageUrls(displayedProofs.map((proof) => proof.image_path));
+
+  return displayedProofs.map((proof) => ({
     id: proof.id,
     nickname: Array.isArray(proof.participants) ? proof.participants[0]?.nickname : proof.participants.nickname,
     proofDate: proof.proof_date,
@@ -79,6 +93,7 @@ export async function getFeed(challengeId: string) {
     missionTitle: proof.daily_random_missions
       ? (Array.isArray(proof.daily_random_missions) ? proof.daily_random_missions[0]?.title : proof.daily_random_missions.title)
       : null,
+    imageUrl: imageUrls.get(proof.image_path) ?? `/api/proofs/${proof.id}/image`,
     streak: proof.proof_type === "MORNING"
       ? calculateStreak(datesByParticipant.get(proof.participant_id) ?? [], proof.proof_date)
       : null,
@@ -98,6 +113,7 @@ interface ParticipationRow {
 
 interface AdminProofRow {
   id: string;
+  image_path: string;
   content: string;
   created_at: string;
   proof_date: string;
@@ -155,7 +171,7 @@ export async function getAdminDashboard() {
       .order("joined_at", { ascending: false }),
     supabase
       .from("proofs")
-      .select("id, content, created_at, proof_date, status, proof_type, participants!inner(nickname), challenges!inner(title), daily_random_missions(title)")
+      .select("id, image_path, content, created_at, proof_date, status, proof_type, participants!inner(nickname), challenges!inner(title), daily_random_missions(title)")
       .order("created_at", { ascending: false })
       .limit(30),
   ]);
@@ -173,6 +189,9 @@ export async function getAdminDashboard() {
     ? await supabase.from("proofs").select("participant_id, challenge_id, proof_date").in("participant_id", participantIds).in("challenge_id", challengeIds).eq("proof_type", "MORNING").eq("status", "VALID")
     : { data: [] };
 
+  const proofRows = (proofs ?? []) as unknown as AdminProofRow[];
+  const imageUrls = await getSignedProofImageUrls(proofRows.map((proof) => proof.image_path));
+
   return {
     participants: participantRows.map((row) => {
       const dates = (validProofs ?? [])
@@ -181,13 +200,17 @@ export async function getAdminDashboard() {
       const participantChallenge = { ...row.challenge, start_date: row.start_date, end_date: row.end_date };
       return { ...row, stats: calculateLiveStats(participantChallenge, dates) };
     }),
-    proofs: ((proofs ?? []) as unknown as AdminProofRow[]).map((proof) => ({
-      ...proof,
+    proofs: proofRows.map((proof) => ({
+      id: proof.id,
+      content: proof.content,
+      created_at: proof.created_at,
+      status: proof.status,
+      proof_type: proof.proof_type,
       participant: Array.isArray(proof.participants) ? proof.participants[0] : proof.participants,
-      challenge: Array.isArray(proof.challenges) ? proof.challenges[0] : proof.challenges,
       missionTitle: proof.daily_random_missions
         ? (Array.isArray(proof.daily_random_missions) ? proof.daily_random_missions[0]?.title : proof.daily_random_missions.title)
         : null,
+      imageUrl: imageUrls.get(proof.image_path) ?? `/api/proofs/${proof.id}/image`,
     })),
   };
 }

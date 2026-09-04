@@ -30,7 +30,7 @@ export default async function FeedPage() {
               )}
             </div>
             <div className="relative aspect-square w-full bg-ink/5 sm:aspect-[4/3]">
-              <Image src={`/api/proofs/${proof.id}/image`} alt={`${proof.nickname}님의 ${proof.proofDate} 인증 사진`} fill sizes="(max-width: 768px) 100vw, 704px" unoptimized className="object-cover" />
+              <Image src={proof.imageUrl} alt={`${proof.nickname}님의 ${proof.proofDate} 인증 사진`} fill sizes="(max-width: 768px) 100vw, 704px" unoptimized className="object-cover" />
             </div>
             <div className="px-5 py-5">{proof.missionTitle && <p className="mb-1 text-xs font-extrabold text-coral">{proof.missionTitle}</p>}<p className="text-sm font-semibold leading-6 text-ink/75">{proof.content}</p></div>
           </article>
