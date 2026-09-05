@@ -40,7 +40,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         {children}
-        <nav aria-label="정책 안내" className="flex justify-center gap-6 border-t border-ink/10 px-5 py-6 text-xs text-ink/65"><Link href="/privacy" className="font-bold underline">개인정보 처리방침</Link><Link href="/photo-rules" className="underline">사진 이용규칙</Link></nav>
+        <nav aria-label="정책 안내" className="flex justify-center gap-5 border-t border-ink/10 bg-white px-5 py-5 text-[11px] font-bold text-ink/45"><Link href="/privacy" className="transition hover:text-coral hover:underline hover:underline-offset-4">개인정보 처리방침</Link><Link href="/photo-rules" className="transition hover:text-coral hover:underline hover:underline-offset-4">사진 이용규칙</Link></nav>
         <WebMcpTools />
         <Analytics />
       </body>

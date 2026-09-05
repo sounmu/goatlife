@@ -2,7 +2,7 @@ import { PhotoConsentForm } from "@/components/forms/photo-consent-form";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { hasPhotoConsent } from "@/lib/photo-consent";
 import type { Metadata } from "next";
-import { Clock3, Sparkles } from "lucide-react";
+import { Clock3, ShieldCheck, Sparkles } from "lucide-react";
 import { ProofForm } from "@/components/forms/proof-form";
 import { requireParticipant } from "@/lib/auth/participant";
 import { formatKoreaDate, isWithinProofWindow, koreaDate, proofDateForWindow } from "@/lib/date";
@@ -19,10 +19,16 @@ export default async function NewProofPage() {
     .eq("participant_id", participant.id)
     .single();
   if (consentError) throw new Error("사진 동의 정보를 확인하지 못했습니다.");
-  if (!hasPhotoConsent(consent)) return <main className="mx-auto w-full max-w-2xl px-5 py-10">
-    <h1 className="text-2xl font-black">사진 인증 전에 한 번만 확인해 주세요</h1>
-    <p className="mt-3 text-sm leading-6 text-ink/65">이번 챌린지의 사진 이용과 공개에 동의하면 다음 인증부터는 다시 묻지 않아요. 기존 사진에 대한 동의를 소급해서 받는 것은 아니에요.</p>
-    <PhotoConsentForm />
+  if (!hasPhotoConsent(consent)) return <main className="mx-auto w-full max-w-2xl px-5 py-8 sm:px-8 sm:py-12">
+    <div className="text-center">
+      <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-ink text-lime"><ShieldCheck className="size-6" aria-hidden="true" /></div>
+      <p className="mt-6 text-xs font-extrabold uppercase tracking-[.16em] text-coral">One-time consent</p>
+      <h1 className="mt-2 font-display text-4xl font-black tracking-[-.05em] text-ink">인증 전에, 한 번만 확인해 주세요.</h1>
+      <p className="mx-auto mt-4 max-w-lg text-sm font-medium leading-6 text-ink/50">이번 챌린지의 사진 이용과 공개에 동의하면 다음 인증부터는 다시 묻지 않아요. 기존 사진에 대한 동의를 소급해서 받는 것은 아니에요.</p>
+    </div>
+    <section className="mt-8 rounded-[2rem] border border-ink/10 bg-white p-5 shadow-sm sm:p-7">
+      <PhotoConsentForm />
+    </section>
   </main>;
   const randomMissionDate = koreaDate();
   const [dashboard, randomMission] = await Promise.all([
