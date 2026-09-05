@@ -1,3 +1,6 @@
+import { PhotoConsentForm } from "@/components/forms/photo-consent-form";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { hasPhotoConsent } from "@/lib/photo-consent";
 import type { Metadata } from "next";
 import { Clock3, Sparkles } from "lucide-react";
 import { ProofForm } from "@/components/forms/proof-form";
@@ -9,6 +12,18 @@ export const metadata: Metadata = { title: "오늘 인증" };
 
 export default async function NewProofPage() {
   const participant = await requireParticipant();
+  const { data: consent, error: consentError } = await getSupabaseAdmin()
+    .from("challenge_participants")
+    .select("photo_consent_version, photo_consent_at")
+    .eq("id", participant.challengeParticipantId)
+    .eq("participant_id", participant.id)
+    .single();
+  if (consentError) throw new Error("사진 동의 정보를 확인하지 못했습니다.");
+  if (!hasPhotoConsent(consent)) return <main className="mx-auto w-full max-w-2xl px-5 py-10">
+    <h1 className="text-2xl font-black">사진 인증 전에 한 번만 확인해 주세요</h1>
+    <p className="mt-3 text-sm leading-6 text-ink/65">이번 챌린지의 사진 이용과 공개에 동의하면 다음 인증부터는 다시 묻지 않아요. 기존 사진에 대한 동의를 소급해서 받는 것은 아니에요.</p>
+    <PhotoConsentForm />
+  </main>;
   const randomMissionDate = koreaDate();
   const [dashboard, randomMission] = await Promise.all([
     getMyDashboard(participant.id, participant.challengeId),

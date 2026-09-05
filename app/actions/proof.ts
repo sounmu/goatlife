@@ -1,5 +1,6 @@
 "use server";
 
+import { hasPhotoConsent } from "@/lib/photo-consent";
 import { photoRetentionEnded } from "@/lib/photo-retention";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -16,7 +17,6 @@ const allowedTypes = new Map([["image/webp", "webp"]]);
 export async function createProof(_: ActionState, formData: FormData): Promise<ActionState> {
   const session = await requireParticipant();
   if (photoRetentionEnded(session.challengeId)) return { message: "이번 챌린지 사진 보관기간이 종료되어 업로드할 수 없어요." };
-  if (["photoPrivacy", "photoSharing", "photoRules"].some((key) => formData.get(key) !== "on")) return { message: "사진 수집·이용, 참가자 제공 및 사진 이용규칙에 각각 동의해 주세요." };
   const image = formData.get("image");
   const parsed = proofSchema.safeParse({
     content: formData.get("content"),
@@ -36,9 +36,10 @@ export async function createProof(_: ActionState, formData: FormData): Promise<A
   const supabase = getSupabaseAdmin();
   const [{ data: challenge, error: challengeError }, { data: participation, error: participationError }] = await Promise.all([
     supabase.from("challenges").select("*").eq("id", session.challengeId).single(),
-    supabase.from("challenge_participants").select("start_date, end_date").eq("id", session.challengeParticipantId).single(),
+    supabase.from("challenge_participants").select("start_date, end_date, photo_consent_version, photo_consent_at").eq("id", session.challengeParticipantId).single(),
   ]);
   if (challengeError || participationError) return { message: "챌린지 정보를 확인하지 못했어요." };
+  if (!hasPhotoConsent(participation)) return { message: "사진 이용 동의가 필요해요. 인증 페이지를 새로고침하고 한 번만 동의해 주세요." };
   const typedChallenge = challenge as Challenge;
   const proofType = parsed.data.proofType;
   const today = proofType === "MORNING"
@@ -91,8 +92,8 @@ export async function createProof(_: ActionState, formData: FormData): Promise<A
     capture_source: parsed.data.imageSource,
     daily_random_mission_id: dailyMissionId,
     image_path: storagePath,
-    photo_consent_version: "2026-09-05",
-    photo_consent_at: new Date().toISOString(),
+    photo_consent_version: participation.photo_consent_version,
+    photo_consent_at: participation.photo_consent_at,
     content: parsed.data.content,
     status: "VALID",
   });

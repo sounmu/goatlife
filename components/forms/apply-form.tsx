@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { applyForChallenge } from "@/app/actions/apply";
 import { FormField, inputClassName } from "@/components/form-field";
+import { PhotoConsentFields } from "@/components/forms/photo-consent-fields";
 import { SubmitButton } from "@/components/submit-button";
 
 export function ApplyForm({ challengeId }: { challengeId: string }) {
@@ -32,6 +33,8 @@ export function ApplyForm({ challengeId }: { challengeId: string }) {
         <span className="text-xs font-semibold leading-5 text-ink/60">[필수] 참가 관리·로그인 복구·운영 연락·입금 확인을 위한 닉네임, 전화번호, 입금자명 수집·이용에 동의합니다. 정산 및 이의제기 처리 완료 후 30일 이내 삭제하며, 법정 보관 의무가 있는 기록은 해당 기간 보관합니다. 동의를 거부할 수 있으나 참가 신청이 어렵습니다.</span>
       </label>
       {!values.privacy && state.fieldErrors?.privacy?.[0] && <p className="-mt-3 text-xs font-semibold text-coral">{state.fieldErrors.privacy[0]}</p>}
+      <PhotoConsentFields />
+      {["photoPrivacy", "photoSharing", "photoRules"].map((name) => state.fieldErrors?.[name]?.[0] ? <p key={name} role="alert" className="text-xs text-coral">{state.fieldErrors[name][0]}</p> : null)}
       {state.message && <p role="alert" className="rounded-2xl bg-coral/10 p-4 text-sm font-bold text-coral">{state.message}</p>}
       <SubmitButton pendingText="신청을 저장하는 중...">참가 신청하기</SubmitButton>
     </form>

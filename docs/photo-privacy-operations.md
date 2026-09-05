@@ -5,7 +5,7 @@
 - Supabase 한국(서울) 리전은 운영자의 확인에 근거한다. Vercel 호스팅 및 Web Analytics를 포함한 실제 처리 위탁·국외이전 여부는 별도로 확인한다.
 - Vercel Production 환경변수에 충분히 긴 무작위 `CRON_SECRET`을 설정하고 배포한다. 이 저장소 변경만으로 운영 예약이 활성화되지는 않는다.
 - Vercel Cron 목록에서 `/api/cron/delete-proof-images` 등록을 확인한다. 매일 UTC 15:00(한국시간 다음 날 00:00)에 실행하며, Hobby에서는 해당 시간대 내 실행될 수 있다. 2026-10-04 한국시간 이전에는 삭제를 건너뛴다.
-- 배포 전 `supabase/migrations/202609050001_photo_consent.sql`을 적용한다. 이전 인증에는 동의 기록을 소급 생성하지 않는다.
+- 배포 전 `supabase/migrations/202609050001_photo_consent.sql` 및 `supabase/migrations/202609050002_challenge_photo_consent.sql`을 순서대로 적용한다. 이전 인증에는 동의 기록을 소급 생성하지 않는다.
 - 기존 참가자에게 변경된 사진 처리방침을 안내하고, 기존 사진에 필요한 동의를 별도로 확인한다. 새로운 업로드의 동의가 과거 사진에 자동 적용되지는 않는다.
 
 ## 10월 4일 삭제 확인
@@ -20,3 +20,11 @@
 참고: https://supabase.com/docs/guides/storage/management/delete-objects
 참고: https://supabase.com/docs/guides/platform/backups
 참고: https://vercel.com/docs/cron-jobs/manage-cron-jobs
+
+## 신청 시 한 번 받는 동의
+- 신청 시 참가 개인정보, 사진 수집·이용, 참가자 제공, 사진 이용규칙을 각각 확인한다. 신청 RPC가 참가 등록과 동의 버전·시각을 한 트랜잭션으로 저장한다.
+- 동의는 `challenge_participants` 단위이며 다른 챌린지로 이어지지 않는다. 버전은 `2026-09-05-challenge`다.
+- 기존 참가자의 과거 사진별 동의는 새로운 전체 챌린지 동의로 간주하지 않는다. 인증 페이지에서 한 번만 별도 동의하고 이후 업로드는 저장된 기록으로 검증한다.
+- 사진별 기록에는 실제 참가 동의 시각을 복사한다. 업로드 때 새로 동의한 것으로 기록하지 않는다.
+- 동의 철회 요청은 운영 창구에서 처리한다. 본인 확인 후 해당 참가의 `photo_consent_version`, `photo_consent_at`을 NULL로 변경하고 요청 범위에 맞게 기존 사진도 처리한다. 이후 업로드에는 명시적 재동의가 필요하다.
+- 동의 버전을 바꿀 때는 앱 상수, SQL 허용 버전 및 동의 문구를 함께 변경한다.

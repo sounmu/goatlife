@@ -1,6 +1,12 @@
 import { z } from "zod";
 
-export const applySchema = z.object({
+export const photoConsentSchema = z.object({
+  photoPrivacy: z.literal("on", { error: "사진 수집·이용에 동의해 주세요." }),
+  photoSharing: z.literal("on", { error: "같은 챌린지 참가자에게 사진을 제공하는 데 동의해 주세요." }),
+  photoRules: z.literal("on", { error: "사진 이용규칙에 동의해 주세요." }),
+});
+
+export const applySchema = photoConsentSchema.extend({
   challengeId: z.uuid("챌린지 정보가 올바르지 않습니다."),
   nickname: z.string().trim().min(2, "닉네임을 2자 이상 입력해 주세요.").max(20, "닉네임은 20자까지 입력할 수 있어요."),
   phone: z.string().transform((value) => value.replace(/\D/g, "")).refine((value) => /^01[016789]\d{7,8}$/.test(value), "올바른 휴대폰 번호를 입력해 주세요."),

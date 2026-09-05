@@ -1,5 +1,6 @@
 "use server";
 
+import { PHOTO_CONSENT_VERSION } from "@/lib/photo-consent";
 import { redirect } from "next/navigation";
 import type { ActionState } from "@/lib/domain";
 import { getSupabaseAdmin, ConfigurationError } from "@/lib/supabase/admin";
@@ -12,6 +13,9 @@ export async function applyForChallenge(_: ActionState, formData: FormData): Pro
     phone: formData.get("phone"),
     depositorName: formData.get("depositorName"),
     privacy: formData.get("privacy"),
+    photoPrivacy: formData.get("photoPrivacy"),
+    photoSharing: formData.get("photoSharing"),
+    photoRules: formData.get("photoRules"),
   });
   if (!parsed.success) return { fieldErrors: fieldErrors(parsed.error) };
 
@@ -19,7 +23,8 @@ export async function applyForChallenge(_: ActionState, formData: FormData): Pro
   let participantEndDate: string | undefined;
   try {
     const supabase = getSupabaseAdmin();
-    const { data: participantId, error } = await supabase.rpc("apply_to_challenge", {
+    const { data: participantId, error } = await supabase.rpc("apply_to_challenge_with_consent", {
+      p_consent_version: PHOTO_CONSENT_VERSION,
       p_challenge_id: parsed.data.challengeId,
       p_nickname: parsed.data.nickname,
       p_phone: parsed.data.phone,
