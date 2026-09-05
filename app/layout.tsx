@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
@@ -39,6 +40,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         {children}
+        <nav aria-label="정책 안내" className="flex justify-center gap-6 border-t border-ink/10 px-5 py-6 text-xs text-ink/65"><Link href="/privacy" className="font-bold underline">개인정보 처리방침</Link><Link href="/photo-rules" className="underline">사진 이용규칙</Link></nav>
         <WebMcpTools />
         <Analytics />
       </body>
