@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { BadgeCheck, Building2, Coffee, Copy, Sparkles, TicketPercent, WalletCards } from "lucide-react";
+import { BadgeCheck, Building2, Coffee, Copy, TicketPercent, WalletCards } from "lucide-react";
 import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { appConfig } from "@/lib/config";
@@ -41,7 +41,7 @@ export default async function ApplyCompletePage({ searchParams }: { searchParams
           </div>
           <div className="mt-5 rounded-2xl bg-coral/10 px-4 py-3 text-xs font-bold leading-5 text-coral">신청서의 입금자명과 실제 입금자명이 같아야 빠르게 확인할 수 있어요.</div>
           <div className="mt-5 rounded-3xl bg-lime/60 p-5 text-left">
-            <p className="flex items-center gap-2 text-xs font-extrabold"><Sparkles className="size-4 text-coral" /> 완주 혜택도 기다리고 있어요</p>
+            <p className="text-xs font-extrabold">완주 혜택도 기다리고 있어요</p>
             <div className="mt-3 space-y-2 text-xs font-bold leading-5 text-ink/70">
               <p className="flex items-center gap-2"><TicketPercent className="size-4 shrink-0 text-coral" /> 로테이션 소개팅 참여 1만원 할인 쿠폰</p>
               <p className="flex items-center gap-2"><Coffee className="size-4 shrink-0 text-coral" /> 완주자 중 추첨 5명에게 커피 선물</p>

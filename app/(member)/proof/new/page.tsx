@@ -2,7 +2,7 @@ import { PhotoConsentForm } from "@/components/forms/photo-consent-form";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { hasPhotoConsent } from "@/lib/photo-consent";
 import type { Metadata } from "next";
-import { Clock3, ShieldCheck, Sparkles } from "lucide-react";
+import { Clock3, ShieldCheck } from "lucide-react";
 import { ProofForm } from "@/components/forms/proof-form";
 import { requireParticipant } from "@/lib/auth/participant";
 import { formatKoreaDate, isWithinProofWindow, koreaDate, proofDateForWindow } from "@/lib/date";
@@ -80,11 +80,10 @@ export default async function NewProofPage() {
         <div className="border-b border-ink/8 bg-lime px-5 py-5 sm:px-7">
           <div className="flex items-center justify-between gap-3">
             <div><p className="text-[10px] font-extrabold uppercase tracking-[.14em] text-ink/45">Bonus · Daily random</p><h2 className="mt-1 font-display text-2xl font-black">{randomMission?.title ?? "오늘의 랜덤 미션"}</h2></div>
-            <Sparkles className="size-6 text-coral" />
           </div>
           <p className="mt-3 text-sm font-semibold leading-6 text-ink/65">{randomMission?.description ?? "매일 새로운 미션이 공개돼요."}</p>
           <p className="mt-2 text-[11px] font-bold text-ink/40">하루 종일 · 카메라 촬영 또는 앨범 업로드 가능</p>
-          <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-ink px-3 py-1.5 text-[11px] font-extrabold text-white"><Sparkles className="size-3.5 text-coral" /> 완료할수록 커피 추첨 당첨 확률 UP</p>
+          <p className="mt-3 inline-flex rounded-full bg-ink px-3 py-1.5 text-[11px] font-extrabold text-white">완료할수록 커피 추첨 당첨 확률 UP</p>
         </div>
         <div className="p-5 sm:p-7"><ProofForm proofType="RANDOM" missionId={randomMission?.id} disabledReason={randomDisabledReason} /></div>
       </section>

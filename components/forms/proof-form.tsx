@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Camera, ImagePlus, X } from "lucide-react";
+import { Camera, Download, ImagePlus, X } from "lucide-react";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { createProof } from "@/app/actions/proof";
 import { SubmitButton } from "@/components/submit-button";
@@ -55,6 +55,16 @@ export function ProofForm({ proofType, disabledReason, missionId }: ProofFormPro
     if (uploadRef.current) uploadRef.current.value = "";
     setPreview(undefined);
     setImageError(undefined);
+  }
+
+  function downloadImage() {
+    if (!preview) return;
+    const link = document.createElement("a");
+    link.href = preview;
+    link.download = `goat-morning-${proofType.toLowerCase()}-${Date.now()}.webp`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
   }
 
   async function prepareImage(source: File, sourceType: "CAMERA" | "UPLOAD") {
@@ -143,6 +153,9 @@ export function ProofForm({ proofType, disabledReason, missionId }: ProofFormPro
             <Image src={preview} alt="선택한 인증 사진 미리보기" fill unoptimized className="object-cover" />
             <button type="button" onClick={clearImage} aria-label="선택한 사진 지우기" className="absolute right-3 top-3 flex size-9 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur"><X className="size-4" /></button>
             <span className="absolute bottom-3 left-3 rounded-full bg-black/55 px-3 py-1.5 text-[10px] font-extrabold text-white backdrop-blur">{imageSource === "CAMERA" ? "방금 촬영" : "앨범에서 선택"}</span>
+            <button type="button" onClick={downloadImage} className="absolute bottom-3 right-3 inline-flex h-9 items-center gap-1.5 rounded-full bg-white/90 px-3 text-[10px] font-extrabold text-ink shadow-sm backdrop-blur transition hover:bg-white" aria-label="인증 사진을 기기에 저장">
+              <Download className="size-3.5" aria-hidden="true" /> 사진 저장
+            </button>
           </div>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">

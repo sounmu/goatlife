@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ArrowLeft, CalendarDays, Clock3, Coffee, Sparkles, TicketPercent, WalletCards } from "lucide-react";
+import { ArrowLeft, CalendarDays, Clock3, Coffee, TicketPercent, WalletCards } from "lucide-react";
 import Link from "next/link";
 import { ApplyForm } from "@/components/forms/apply-form";
 import { Logo } from "@/components/logo";
@@ -42,7 +42,7 @@ export default async function ApplyPage() {
               <p className="mt-5 border-t border-white/10 pt-4 text-center text-xs font-semibold text-white/55">보증금 {formatWon(challenge.deposit_amount)}</p>
             </section>
             <section className="mb-5 rounded-3xl border border-ink/10 bg-lime/70 p-5">
-              <p className="flex items-center gap-2 text-xs font-extrabold uppercase text-ink/45"><Sparkles className="size-4 text-coral" /> 완주 혜택</p>
+              <p className="text-xs font-extrabold uppercase text-ink/45">완주 혜택</p>
               <div className="mt-4 space-y-3">
                 <div className="flex items-center gap-3 rounded-2xl bg-white/70 p-4"><TicketPercent className="size-5 shrink-0 text-coral" /><p className="text-sm font-extrabold">완주자 전원 로테이션 소개팅 참여 1만원 할인 쿠폰</p></div>
                 <div className="flex items-center gap-3 rounded-2xl bg-white/70 p-4"><Coffee className="size-5 shrink-0 text-coral" /><p className="text-sm font-extrabold">완주자 중 추첨 5명에게 커피 선물</p></div>
