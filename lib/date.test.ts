@@ -14,9 +14,9 @@ describe("KST proof rules", () => {
   });
 
   it("accepts the configured morning window inclusively", () => {
-    expect(isWithinProofWindow("05:00", "08:00", new Date("2026-09-09T20:00:00Z"))).toBe(true);
-    expect(isWithinProofWindow("05:00", "08:00", new Date("2026-09-09T23:00:00Z"))).toBe(true);
-    expect(isWithinProofWindow("05:00", "08:00", new Date("2026-09-09T23:01:00Z"))).toBe(false);
+    expect(isWithinProofWindow("05:00", "09:00", new Date("2026-09-09T20:00:00Z"))).toBe(true);
+    expect(isWithinProofWindow("05:00", "09:00", new Date("2026-09-10T00:00:00Z"))).toBe(true);
+    expect(isWithinProofWindow("05:00", "09:00", new Date("2026-09-10T00:01:00Z"))).toBe(false);
   });
 
   it("supports proof windows crossing midnight", () => {
@@ -47,7 +47,7 @@ describe("failure calculation", () => {
   });
 
   it("does not count today as failed before the proof window closes", () => {
-    const liveChallenge = { ...challenge, proof_start_time: "05:00", proof_end_time: "08:00" };
+    const liveChallenge = { ...challenge, proof_start_time: "05:00", proof_end_time: "09:00" };
     const beforeClose = calculateLiveStats(liveChallenge, ["2026-09-10", "2026-09-11"], new Date("2026-09-10T21:00:00Z"));
     expect(beforeClose.eligibleDays).toBe(2);
     expect(beforeClose.successCount).toBe(2);

@@ -20,10 +20,18 @@ export const recoveryLoginSchema = z.object({
 });
 
 export const proofSchema = z.object({
-  content: z.string().trim().min(1, "오늘의 기록을 한 글자 이상 남겨 주세요.").max(140, "기록은 140자까지 입력할 수 있어요."),
+  content: z.string().trim().max(140, "기록은 140자까지 입력할 수 있어요."),
   proofType: z.enum(["MORNING", "RANDOM"]),
   imageSource: z.enum(["CAMERA", "UPLOAD"]),
   missionId: z.string().optional(),
+}).superRefine((value, context) => {
+  if (value.proofType === "MORNING" && !value.content) {
+    context.addIssue({
+      code: "custom",
+      path: ["content"],
+      message: "오늘의 기록을 한 글자 이상 남겨 주세요.",
+    });
+  }
 });
 
 export const adminLoginSchema = z.object({

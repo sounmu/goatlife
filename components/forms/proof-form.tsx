@@ -6,6 +6,7 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import { createProof } from "@/app/actions/proof";
 import { SubmitButton } from "@/components/submit-button";
 import { compressImageToWebp } from "@/lib/client-image";
+import { cameraErrorMessage, openCamera } from "@/lib/client-camera";
 import type { ProofType } from "@/lib/domain";
 
 interface ProofFormProps {
@@ -20,15 +21,19 @@ export function ProofForm({ proofType, disabledReason, missionId }: ProofFormPro
   const [count, setCount] = useState(0);
   const [isCompressing, setIsCompressing] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
+  const [cameraStarting, setCameraStarting] = useState(false);
   const [imageSource, setImageSource] = useState<"CAMERA" | "UPLOAD">("CAMERA");
   const [imageError, setImageError] = useState<string>();
   const fileRef = useRef<HTMLInputElement>(null);
   const uploadRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const cameraRequestRef = useRef(0);
+  const cameraPendingRef = useRef(false);
   const isMorning = proofType === "MORNING";
 
   useEffect(() => () => {
+    cameraRequestRef.current += 1;
     streamRef.current?.getTracks().forEach((track) => track.stop());
   }, []);
 
@@ -39,7 +44,16 @@ export function ProofForm({ proofType, disabledReason, missionId }: ProofFormPro
   useEffect(() => {
     if (!cameraOpen || !videoRef.current || !streamRef.current) return;
     videoRef.current.srcObject = streamRef.current;
-    void videoRef.current.play();
+    const video = videoRef.current;
+    let active = true;
+    void video.play().catch(() => {
+      if (!active) return;
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+      setCameraOpen(false);
+      setImageError("카메라 미리보기를 재생하지 못했어요. 다시 촬영 버튼을 눌러 주세요.");
+    });
+    return () => { active = false; };
   }, [cameraOpen]);
 
   function stopCamera() {
@@ -90,20 +104,36 @@ export function ProofForm({ proofType, disabledReason, missionId }: ProofFormPro
   }
 
   async function startCamera() {
+    if (cameraPendingRef.current || streamRef.current) return;
     setImageError(undefined);
+    if (!window.isSecureContext) {
+      setImageError("카메라는 보안 연결에서만 사용할 수 있어요. HTTPS 주소로 접속해 주세요.");
+      return;
+    }
     if (!navigator.mediaDevices?.getUserMedia) {
       setImageError("이 브라우저에서는 바로 촬영 기능을 사용할 수 없어요. 카메라를 지원하는 최신 브라우저에서 다시 시도해 주세요.");
       return;
     }
+    cameraPendingRef.current = true;
+    setCameraStarting(true);
+    const request = ++cameraRequestRef.current;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: "environment" } },
-        audio: false,
-      });
+      const stream = await openCamera(navigator.mediaDevices);
+      if (request !== cameraRequestRef.current) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
       streamRef.current = stream;
       setCameraOpen(true);
-    } catch {
-      setImageError("카메라를 열지 못했어요. 브라우저의 카메라 권한을 허용해 주세요.");
+    } catch (error) {
+      if (request === cameraRequestRef.current) {
+        setImageError(cameraErrorMessage(error, /Macintosh|Mac OS X/.test(navigator.userAgent)));
+      }
+    } finally {
+      if (request === cameraRequestRef.current) {
+        cameraPendingRef.current = false;
+        setCameraStarting(false);
+      }
     }
   }
 
@@ -132,7 +162,7 @@ export function ProofForm({ proofType, disabledReason, missionId }: ProofFormPro
   }
 
   return (
-    <form action={action} className="space-y-5" onSubmit={(event) => { if (isCompressing || cameraOpen) event.preventDefault(); }}>
+    <form action={action} className="space-y-5" onSubmit={(event) => { if (isCompressing || cameraStarting || cameraOpen) event.preventDefault(); }}>
       <input type="hidden" name="proofType" value={proofType} />
       <input type="hidden" name="imageSource" value={imageSource} />
       {missionId && <input type="hidden" name="missionId" value={missionId} />}
@@ -159,9 +189,9 @@ export function ProofForm({ proofType, disabledReason, missionId }: ProofFormPro
           </div>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
-            <button type="button" onClick={() => void startCamera()} disabled={Boolean(disabledReason) || isCompressing} className={`flex min-h-40 flex-col items-center justify-center rounded-3xl border-2 border-dashed border-ink/15 bg-cream/55 text-center transition hover:border-coral hover:bg-coral/5 disabled:cursor-not-allowed disabled:opacity-50 ${isMorning ? "sm:col-span-2" : ""}`}>
+            <button type="button" onClick={() => void startCamera()} disabled={Boolean(disabledReason) || isCompressing || cameraStarting} className={`flex min-h-40 flex-col items-center justify-center rounded-3xl border-2 border-dashed border-ink/15 bg-cream/55 text-center transition hover:border-coral hover:bg-coral/5 disabled:cursor-not-allowed disabled:opacity-50 ${isMorning ? "sm:col-span-2" : ""}`}>
               <span className="flex size-14 items-center justify-center rounded-full bg-white text-coral shadow-sm"><Camera className="size-6" /></span>
-              <span className="mt-4 text-sm font-extrabold">카메라로 바로 촬영</span>
+              <span className="mt-4 text-sm font-extrabold">{cameraStarting ? "카메라 연결 중..." : "카메라로 바로 촬영"}</span>
               <span className="mt-1 text-xs font-medium text-ink/40">{isMorning ? "아침 인증은 즉시 촬영만 가능해요" : "지금 미션 모습을 촬영해요"}</span>
             </button>
             {!isMorning && (
@@ -169,23 +199,23 @@ export function ProofForm({ proofType, disabledReason, missionId }: ProofFormPro
                 <span className="flex size-14 items-center justify-center rounded-full bg-white text-coral shadow-sm"><ImagePlus className="size-6" /></span>
                 <span className="mt-4 text-sm font-extrabold">앨범에서 선택</span>
                 <span className="mt-1 text-xs font-medium text-ink/40">기존 사진도 올릴 수 있어요</span>
-                <input ref={uploadRef} id="random-upload" type="file" accept="image/*" disabled={Boolean(disabledReason) || isCompressing} className="sr-only" onChange={(event) => { const file = event.target.files?.[0]; if (file) void prepareImage(file, "UPLOAD"); }} />
+                <input ref={uploadRef} id="random-upload" type="file" accept="image/*" disabled={Boolean(disabledReason) || isCompressing || cameraStarting} className="sr-only" onChange={(event) => { const file = event.target.files?.[0]; if (file) void prepareImage(file, "UPLOAD"); }} />
               </label>
             )}
           </div>
         )}
-        {imageError && <p className="mt-2 text-xs font-semibold text-coral">{imageError}</p>}
+        {imageError && <p role="alert" className="mt-2 text-xs font-semibold text-coral">{imageError}</p>}
         {state.fieldErrors?.image?.[0] && <p className="mt-2 text-xs font-semibold text-coral">{state.fieldErrors.image[0]}</p>}
       </div>
 
       <div>
-        <div className="mb-2 flex items-center justify-between"><label htmlFor={`${proofType}-content`} className="text-sm font-extrabold">{isMorning ? "일어난 뒤 무엇을 했나요?" : "미션을 어떻게 완료했나요?"}</label><span className="text-xs font-semibold text-ink/35">{count}/140</span></div>
-        <textarea id={`${proofType}-content`} name="content" maxLength={140} required disabled={Boolean(disabledReason)} onChange={(event) => setCount(event.target.value.length)} placeholder={isMorning ? "예: 공원에서 30분 러닝을 했어요." : "예: 점심을 먹고 동네를 10분 걸었어요."} className="min-h-28 w-full resize-none rounded-2xl border border-ink/12 bg-white p-4 text-base font-semibold outline-none transition placeholder:text-ink/25 focus:border-ink focus:ring-4 focus:ring-lime/35" />
+        <div className="mb-2 flex items-center justify-between"><label htmlFor={`${proofType}-content`} className="text-sm font-extrabold">{isMorning ? "일어난 뒤 무엇을 했나요?" : "미션 기록 (선택)"}</label><span className="text-xs font-semibold text-ink/35">{count}/140</span></div>
+        <textarea id={`${proofType}-content`} name="content" maxLength={140} required={isMorning} disabled={Boolean(disabledReason)} onChange={(event) => setCount(event.target.value.length)} placeholder={isMorning ? "예: 공원에서 30분 러닝을 했어요." : "사진만 올려도 완료할 수 있어요."} className="min-h-28 w-full resize-none rounded-2xl border border-ink/12 bg-white p-4 text-base font-semibold outline-none transition placeholder:text-ink/25 focus:border-ink focus:ring-4 focus:ring-lime/35" />
         {state.fieldErrors?.content?.[0] && <p className="mt-2 text-xs font-semibold text-coral">{state.fieldErrors.content[0]}</p>}
       </div>
       {(disabledReason || state.message) && <p role="alert" className="rounded-2xl bg-coral/10 p-4 text-sm font-bold leading-6 text-coral">{disabledReason ?? state.message}</p>}
       <p className="text-xs leading-6 text-ink/60">사진과 기록은 같은 챌린지 참가자에게 공개되며, 사진 파일은 2026년 10월 4일에 삭제됩니다. 다른 사람의 얼굴·개인정보가 노출되지 않았는지 확인해 주세요. <a href="/photo-rules" target="_blank" rel="noreferrer" className="underline">사진 이용규칙 (새 창)</a></p>
-      <SubmitButton pendingText="사진을 올리는 중..." disabled={Boolean(disabledReason) || isCompressing || cameraOpen || !preview} className={disabledReason ? "pointer-events-none opacity-40" : ""}><Camera className="size-4" /> {isMorning ? "아침 인증 완료하기" : "랜덤 미션 완료하기"}</SubmitButton>
+      <SubmitButton pendingText="사진을 올리는 중..." disabled={Boolean(disabledReason) || isCompressing || cameraStarting || cameraOpen || !preview} className={disabledReason ? "pointer-events-none opacity-40" : ""}><Camera className="size-4" /> {isMorning ? "아침 인증 완료하기" : "랜덤 미션 완료하기"}</SubmitButton>
     </form>
   );
 }

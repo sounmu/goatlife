@@ -84,7 +84,7 @@ export async function createProof(_: ActionState, formData: FormData): Promise<A
   });
   if (uploadError) return { message: "사진 업로드에 실패했어요. 잠시 후 다시 시도해 주세요." };
 
-  const { error: insertError } = await supabase.from("proofs").insert({
+  const { data: insertedProof, error: insertError } = await supabase.from("proofs").insert({
     participant_id: session.id,
     challenge_id: session.challengeId,
     proof_date: today,
@@ -96,7 +96,7 @@ export async function createProof(_: ActionState, formData: FormData): Promise<A
     photo_consent_at: participation.photo_consent_at,
     content: parsed.data.content,
     status: "VALID",
-  });
+  }).select("id").single();
   if (insertError) {
     await supabase.storage.from(appConfig.proofBucket).remove([storagePath]);
     if (insertError.code === "23505") return { message: proofType === "MORNING" ? "오늘 아침 인증은 이미 완료했어요." : "오늘 랜덤 미션은 이미 완료했어요." };
@@ -106,5 +106,5 @@ export async function createProof(_: ActionState, formData: FormData): Promise<A
   revalidatePath("/feed");
   revalidatePath("/me");
   revalidatePath("/admin");
-  redirect("/feed");
+  redirect(`/proof/${insertedProof.id}/complete`);
 }

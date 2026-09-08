@@ -7,9 +7,11 @@ import { getFeed } from "@/lib/data";
 
 export const metadata: Metadata = { title: "인증 피드" };
 
-export default async function FeedPage() {
+export default async function FeedPage({ searchParams }: PageProps<"/feed">) {
   const participant = await requireParticipant();
-  const proofs = await getFeed(participant.challengeId);
+  const { scope } = await searchParams;
+  const friendsOnly = scope === "friends";
+  const proofs = await getFeed(participant.challengeId, participant.id, friendsOnly);
   return (
     <main className="mx-auto max-w-3xl px-5 pb-8 pt-5 sm:px-8 sm:pb-12 sm:pt-8">
       <div className="flex items-end justify-between gap-4">
@@ -17,7 +19,7 @@ export default async function FeedPage() {
         <Link href="/proof/new" className="hidden h-12 items-center gap-2 rounded-full bg-ink px-5 text-sm font-extrabold text-white transition hover:bg-coral md:inline-flex"><Camera className="size-4" /> 인증하기</Link>
       </div>
 
-      <FeedView proofs={proofs} />
+      <FeedView proofs={proofs} friendsOnly={friendsOnly} />
     </main>
   );
 }

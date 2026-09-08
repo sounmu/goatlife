@@ -5,11 +5,12 @@ import { loginWithRecoveryCode } from "@/app/actions/auth";
 import { FormField, inputClassName } from "@/components/form-field";
 import { SubmitButton } from "@/components/submit-button";
 
-export function LoginForm() {
+export function LoginForm({ nextPath }: { nextPath?: string }) {
   const [state, action] = useActionState(loginWithRecoveryCode, {});
   const [phone, setPhone] = useState("");
   return (
     <form action={action} className="space-y-6">
+      {nextPath && <input type="hidden" name="next" value={nextPath} />}
       <FormField label="전화번호" name="phone" error={state.fieldErrors?.phone} hint="하이픈(-) 없이 숫자만 입력해 주세요.">
         <input
           id="phone"

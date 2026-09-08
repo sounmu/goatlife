@@ -93,7 +93,7 @@ export function RecentProofs({ proofs, today }: { proofs: RecentProof[]; today: 
                 <span className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold ${proof.status === "VALID" ? "bg-lime" : "bg-coral/10 text-coral"}`}>{proof.status === "VALID" ? "인정" : "무효"}</span>
               </div>
               {proof.missionTitle && <p className="mt-4 text-xs font-extrabold text-coral">{proof.missionTitle}</p>}
-              <p className={`${proof.missionTitle ? "mt-1" : "mt-4"} line-clamp-2 text-xs font-medium leading-5 text-ink/55`}>{proof.content}</p>
+              {proof.content && <p className={`${proof.missionTitle ? "mt-1" : "mt-4"} line-clamp-2 text-xs font-medium leading-5 text-ink/55`}>{proof.content}</p>}
               <form action={setProofValidity} className="mt-4">
                 <input type="hidden" name="proofId" value={proof.id} />
                 <input type="hidden" name="status" value={proof.status === "VALID" ? "INVALID" : "VALID"} />

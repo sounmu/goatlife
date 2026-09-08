@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     default: "GOAT.MORNING — 14일 보증금 챌린지",
     template: "%s | GOAT.MORNING",
   },
-  description: "아침 루틴과 날짜별 랜덤 미션을 사진과 한 줄 기록으로 남기는 14일 보증금 챌린지.",
+  description: "아침 루틴과 날짜별 랜덤 미션을 사진과 선택 기록으로 남기는 14일 보증금 챌린지.",
   openGraph: {
     title: "GOAT.MORNING — 돈을 걸고, 아침을 바꿔보세요.",
     description: "아침 루틴과 날짜별 랜덤 미션을 기록하며 14일을 완주하는 습관 챌린지.",

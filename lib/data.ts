@@ -25,7 +25,7 @@ async function getSignedProofImageUrls(paths: string[]) {
 export const demoChallenge: Challenge = {
   id: "11111111-1111-4111-8111-111111111111",
   title: "14일 미라클 모닝",
-  description: "매일 아침 5시부터 8시 사이, 일어난 뒤 한 일을 사진과 짧은 기록으로 남겨요.",
+  description: "매일 아침 5시부터 9시 사이, 일어난 뒤 한 일을 사진과 짧은 기록으로 남겨요.",
   deposit_amount: 10_000,
   application_start_date: "2026-09-04",
   application_end_date: "2026-09-13",
@@ -35,7 +35,7 @@ export const demoChallenge: Challenge = {
   max_failures: 2,
   failure_rule: "ABOVE",
   proof_start_time: "05:00:00",
-  proof_end_time: "08:00:00",
+  proof_end_time: "09:00:00",
   status: "OPEN",
 };
 
@@ -64,14 +64,31 @@ interface FeedProofRow {
   daily_random_missions: { title: string } | { title: string }[] | null;
 }
 
-export async function getFeed(challengeId: string) {
+async function getFriendIds(challengeId: string, participantId: string) {
+  const { data, error } = await getSupabaseAdmin()
+    .from("friendships")
+    .select("participant_one_id, participant_two_id")
+    .eq("challenge_id", challengeId)
+    .or(`participant_one_id.eq.${participantId},participant_two_id.eq.${participantId}`);
+  if (error) throw error;
+  return (data ?? []).map((friendship) => friendship.participant_one_id === participantId
+    ? friendship.participant_two_id
+    : friendship.participant_one_id);
+}
+
+export async function getFeed(challengeId: string, participantId: string, friendsOnly = false) {
   const supabase = getSupabaseAdmin();
-  const { data: proofs, error } = await supabase
+  const friendIds = friendsOnly ? await getFriendIds(challengeId, participantId) : [];
+  if (friendsOnly && !friendIds.length) return [];
+
+  let query = supabase
     .from("proofs")
     .select("id, participant_id, image_path, proof_date, content, created_at, proof_type, participants!inner(nickname), daily_random_missions(title)")
     .eq("challenge_id", challengeId)
     .eq("status", "VALID")
     .order("created_at", { ascending: false });
+  if (friendsOnly) query = query.in("participant_id", friendIds);
+  const { data: proofs, error } = await query;
   if (error) throw error;
 
   const proofRows = (proofs ?? []) as unknown as FeedProofRow[];
@@ -98,6 +115,71 @@ export async function getFeed(challengeId: string) {
       ? calculateStreak(datesByParticipant.get(proof.participant_id) ?? [], proof.proof_date)
       : null,
   }));
+}
+
+export async function getFriends(challengeId: string, participantId: string) {
+  const friendIds = await getFriendIds(challengeId, participantId);
+  if (!friendIds.length) return [];
+  const { data, error } = await getSupabaseAdmin()
+    .from("participants")
+    .select("id, nickname")
+    .in("id", friendIds)
+    .order("nickname");
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function getFriendInvitePreview(challengeId: string, inviterId: string, viewerId: string) {
+  const supabase = getSupabaseAdmin();
+  const [{ data: inviter }, { data: friendship }] = await Promise.all([
+    supabase
+      .from("challenge_participants")
+      .select("participants!inner(id, nickname)")
+      .eq("challenge_id", challengeId)
+      .eq("participant_id", inviterId)
+      .in("participant_status", ["ACTIVE", "SUCCESS", "FAILED", "REFUNDED"])
+      .maybeSingle(),
+    viewerId === inviterId
+      ? Promise.resolve({ data: null })
+      : supabase
+        .from("friendships")
+        .select("challenge_id")
+        .eq("challenge_id", challengeId)
+        .eq("participant_one_id", [viewerId, inviterId].sort()[0])
+        .eq("participant_two_id", [viewerId, inviterId].sort()[1])
+        .maybeSingle(),
+  ]);
+  if (!inviter) return null;
+  const participant = Array.isArray(inviter.participants) ? inviter.participants[0] : inviter.participants;
+  return { participant, alreadyFriends: Boolean(friendship), isSelf: inviterId === viewerId };
+}
+
+export async function getProofReceipt(participantId: string, challengeId: string, proofId: string) {
+  const { data, error } = await getSupabaseAdmin()
+    .from("proofs")
+    .select("id, proof_date, content, created_at, proof_type, status, participants!inner(nickname), challenges!inner(title), daily_random_missions(title)")
+    .eq("id", proofId)
+    .eq("participant_id", participantId)
+    .eq("challenge_id", challengeId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  const participant = Array.isArray(data.participants) ? data.participants[0] : data.participants;
+  const challenge = Array.isArray(data.challenges) ? data.challenges[0] : data.challenges;
+  const mission = data.daily_random_missions
+    ? (Array.isArray(data.daily_random_missions) ? data.daily_random_missions[0] : data.daily_random_missions)
+    : null;
+  return {
+    id: data.id,
+    nickname: participant.nickname,
+    challengeTitle: challenge.title,
+    proofDate: data.proof_date,
+    content: data.content,
+    createdAt: data.created_at,
+    proofType: data.proof_type as ProofType,
+    missionTitle: mission?.title ?? null,
+    imageUrl: `/api/proofs/${data.id}/image`,
+  };
 }
 
 interface ParticipationRow {

@@ -24,7 +24,7 @@ export default async function Home() {
   const countdown = Math.max(0, inclusiveDays(today, challenge.application_start_date) - 1);
   const applicationOpen = today >= challenge.application_start_date && today <= challenge.application_end_date;
   const applicationLabel = applicationOpen
-    ? "지금 신청"
+    ? "지금 바로 신청"
     : today < challenge.application_start_date
       ? `${formatKoreaDate(challenge.application_start_date)} 신청 시작`
       : "신청 마감";
@@ -34,7 +34,7 @@ export default async function Home() {
   const steps = [
     { number: "01", title: "보증금을 걸어요", body: `참가 신청 후 안내된 계좌로 ${formatWon(challenge.deposit_amount)}을 입금해요.` },
     { number: "02", title: "두 가지 미션에 도전해요", body: "아침 루틴을 바로 찍어 남기고, 매일 새로 공개되는 랜덤 미션에도 도전해요." },
-    { number: "03", title: "끝까지 해내요", body: `9월 6일부터 순차 시작해 각자의 ${totalDays}일을 완주하면 보증금을 그대로 돌려받아요.` },
+    { number: "03", title: "끝까지 해내요", body: `각자의 ${totalDays}일을 완주하면 보증금을 그대로 돌려받아요.` },
   ];
   return (
     <main className="overflow-hidden">
@@ -64,7 +64,7 @@ export default async function Home() {
             </h1>
             <p className="mt-8 max-w-md text-base font-medium leading-7 text-ink/62 sm:text-lg">
               매일 아침 일어난 뒤 한 일을 사진으로 남기고, 날짜마다 달라지는 랜덤 미션에도 도전해 보세요.
-              작은 기록을 쌓아 끝까지 해내면 보증금은 다시 당신에게 돌아갑니다.
+              작은 기록을 쌓아 끝까지 해내면 보증금은 다시 여러분께 돌아갑니다.
             </p>
             <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
               <Link href={participant ? "/feed" : "/apply"} className="group inline-flex h-14 items-center justify-center gap-2 rounded-full bg-ink px-7 text-base font-extrabold text-white shadow-[0_10px_30px_rgba(25,34,31,.2)] transition hover:-translate-y-0.5 hover:bg-coral">

@@ -13,8 +13,9 @@ const accessMessages: Record<string, string> = {
 };
 
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
-  const { access } = await searchParams;
+  const { access, next } = await searchParams;
   const accessMessage = typeof access === "string" ? accessMessages[access] : undefined;
+  const nextPath = typeof next === "string" && /^\/friends\/add\/[A-Za-z0-9._-]+$/.test(next) ? next : undefined;
 
   return (
     <main className="min-h-screen bg-cream px-5 py-5 sm:px-8 sm:py-8">
@@ -27,7 +28,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
         </div>
         <section className="rounded-3xl border border-ink/10 bg-white p-6 shadow-sm sm:p-8">
           {accessMessage && <p role="alert" className="mb-5 rounded-2xl bg-coral/10 p-4 text-sm font-bold leading-6 text-coral">{accessMessage}</p>}
-          <LoginForm />
+          <LoginForm nextPath={nextPath} />
         </section>
         <p className="mt-7 text-center text-xs font-medium text-ink/40">참가코드를 잃어버렸나요? 운영자에게 문의해 주세요.</p>
       </div>

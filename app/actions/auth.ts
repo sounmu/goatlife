@@ -35,7 +35,9 @@ export async function loginWithRecoveryCode(_: ActionState, formData: FormData):
     console.error("loginWithRecoveryCode", error);
     return { message: "로그인 중 문제가 생겼어요. 잠시 후 다시 시도해 주세요." };
   }
-  redirect("/feed");
+  const requestedPath = String(formData.get("next") ?? "");
+  const redirectPath = /^\/friends\/add\/[A-Za-z0-9._-]+$/.test(requestedPath) ? requestedPath : "/feed";
+  redirect(redirectPath);
 }
 
 export async function participantLogout() {
