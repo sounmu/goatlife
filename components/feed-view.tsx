@@ -67,7 +67,7 @@ export function FeedView({ proofs, friendsOnly = false }: { proofs: FeedProof[];
             <div className={compact ? "px-2.5 pt-2.5" : "px-4 pt-4 sm:px-5 sm:pt-5"}>
               <div className={`relative overflow-hidden bg-ink/5 ${compact ? "aspect-square rounded-[1.1rem]" : "aspect-square rounded-[1.7rem] sm:aspect-[4/3]"}`}>
                 <Image
-                  src={proof.imageUrl}
+                  src={`/api/proofs/${proof.id}/image?thumbnail=1`}
                   alt={`${proof.nickname}님의 ${proof.proofDate} 인증 사진`}
                   fill
                   sizes={compact ? "(max-width: 768px) 45vw, 324px" : "(max-width: 768px) 92vw, 664px"}

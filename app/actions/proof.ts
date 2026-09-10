@@ -27,7 +27,7 @@ export async function createProof(_: ActionState, formData: FormData): Promise<A
   if (!parsed.success) return { fieldErrors: fieldErrors(parsed.error) };
   if (!(image instanceof File) || image.size === 0) return { fieldErrors: { image: ["인증 사진을 선택해 주세요."] } };
   if (!allowedTypes.has(image.type)) return { fieldErrors: { image: ["사진을 WebP로 변환한 뒤 올려 주세요."] } };
-  if (image.size > appConfig.maxUploadBytes) return { fieldErrors: { image: ["압축된 사진은 1MB 이하여야 해요."] } };
+  if (image.size > appConfig.maxUploadBytes) return { fieldErrors: { image: ["압축된 사진은 3MB 이하여야 해요."] } };
   if (session.participantStatus !== "ACTIVE") return { message: "현재 진행 중인 참가자만 인증할 수 있어요." };
   if (parsed.data.proofType === "MORNING" && parsed.data.imageSource !== "CAMERA") {
     return { message: "미라클 모닝 인증은 지금 카메라로 촬영한 사진만 제출할 수 있어요." };

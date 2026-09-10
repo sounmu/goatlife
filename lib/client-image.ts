@@ -1,6 +1,6 @@
-const TARGET_BYTES = 1024 * 1024;
-const INITIAL_MAX_EDGE = 1600;
-const QUALITY_STEPS = [0.82, 0.72, 0.62, 0.52, 0.42];
+const TARGET_BYTES = 3 * 1024 * 1024;
+const INITIAL_MAX_EDGE = 2560;
+const QUALITY_STEPS = [0.9, 0.85, 0.8];
 
 export interface CompressedImage {
   file: File;
@@ -41,7 +41,9 @@ export async function compressImageToWebp(source: File): Promise<CompressedImage
   if (!source.type.startsWith("image/")) throw new Error("이미지 파일을 선택해 주세요.");
   if (source.type === "image/webp" && source.size <= TARGET_BYTES) {
     const image = await loadImage(source);
-    return { file: source, originalBytes: source.size, width: image.naturalWidth, height: image.naturalHeight };
+    if (Math.max(image.naturalWidth, image.naturalHeight) <= INITIAL_MAX_EDGE) {
+      return { file: source, originalBytes: source.size, width: image.naturalWidth, height: image.naturalHeight };
+    }
   }
 
   const image = await loadImage(source);
@@ -79,7 +81,7 @@ export async function compressImageToWebp(source: File): Promise<CompressedImage
     height = Math.max(320, Math.round(height * 0.8));
   }
 
-  throw new Error("사진을 1MB 이하로 줄이지 못했어요. 다른 사진을 선택해 주세요.");
+  throw new Error("사진을 3MB 이하로 줄이지 못했어요. 다른 사진을 선택해 주세요.");
 }
 
 export function formatFileSize(bytes: number) {

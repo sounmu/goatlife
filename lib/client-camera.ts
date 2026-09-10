@@ -7,7 +7,7 @@ function errorName(error: unknown): string {
 export async function openCamera(mediaDevices: Pick<MediaDevices, "getUserMedia">): Promise<MediaStream> {
   try {
     return await mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: "environment" } },
+      video: { facingMode: { ideal: "environment" }, width: { ideal: 2560 }, height: { ideal: 1920 } },
       audio: false,
     });
   } catch (error) {

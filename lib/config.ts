@@ -9,7 +9,7 @@ export const appConfig = {
   },
   sessionDays: Number(process.env.PARTICIPANT_SESSION_DAYS ?? 90),
   tokenDays: Number(process.env.PARTICIPANT_TOKEN_DAYS ?? 30),
-  maxUploadBytes: 1024 * 1024,
+  maxUploadBytes: 3 * 1024 * 1024,
   proofBucket: "proof-images",
 } as const;
 
