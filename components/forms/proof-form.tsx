@@ -5,7 +5,7 @@ import { Camera, Download, ImagePlus, X } from "lucide-react";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { createProof } from "@/app/actions/proof";
 import { SubmitButton } from "@/components/submit-button";
-import { compressImageToWebp } from "@/lib/client-image";
+import { compressImageForUpload } from "@/lib/client-image";
 import { cameraErrorMessage, openCamera } from "@/lib/client-camera";
 import type { ProofType } from "@/lib/domain";
 
@@ -75,7 +75,8 @@ export function ProofForm({ proofType, disabledReason, missionId }: ProofFormPro
     if (!preview) return;
     const link = document.createElement("a");
     link.href = preview;
-    link.download = `goat-morning-${proofType.toLowerCase()}-${Date.now()}.webp`;
+    const extension = fileRef.current?.files?.[0]?.type === "image/jpeg" ? "jpg" : "webp";
+    link.download = `goat-morning-${proofType.toLowerCase()}-${Date.now()}.${extension}`;
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -89,7 +90,7 @@ export function ProofForm({ proofType, disabledReason, missionId }: ProofFormPro
       setPreview(undefined);
     }
     try {
-      const compressed = await compressImageToWebp(source);
+      const compressed = await compressImageForUpload(source);
       const transfer = new DataTransfer();
       transfer.items.add(compressed.file);
       if (fileRef.current) fileRef.current.files = transfer.files;
@@ -152,13 +153,13 @@ export function ProofForm({ proofType, disabledReason, missionId }: ProofFormPro
       return;
     }
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/webp", 0.9));
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.9));
     stopCamera();
     if (!blob) {
       setImageError("촬영한 사진을 변환하지 못했어요.");
       return;
     }
-    await prepareImage(new File([blob], `camera-${Date.now()}.webp`, { type: "image/webp" }), "CAMERA");
+    await prepareImage(new File([blob], `camera-${Date.now()}.${blob.type === "image/jpeg" ? "jpg" : "png"}`, { type: blob.type }), "CAMERA");
   }
 
   return (
@@ -166,7 +167,7 @@ export function ProofForm({ proofType, disabledReason, missionId }: ProofFormPro
       <input type="hidden" name="proofType" value={proofType} />
       <input type="hidden" name="imageSource" value={imageSource} />
       {missionId && <input type="hidden" name="missionId" value={missionId} />}
-      <input ref={fileRef} name="image" type="file" accept="image/webp" className="sr-only" tabIndex={-1} />
+      <input ref={fileRef} name="image" type="file" accept="image/webp,image/jpeg" className="sr-only" tabIndex={-1} />
 
       <div>
         <p className="mb-2 text-sm font-extrabold">{isMorning ? "지금 촬영한 아침 사진" : "랜덤 미션 인증 사진"}</p>

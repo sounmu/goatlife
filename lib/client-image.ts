@@ -25,19 +25,16 @@ function loadImage(file: File) {
   });
 }
 
-function toWebp(canvas: HTMLCanvasElement, quality: number) {
-  return new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob((blob) => {
-      if (!blob || blob.type !== "image/webp") {
-        reject(new Error("이 브라우저는 WebP 사진 변환을 지원하지 않아요."));
-        return;
-      }
-      resolve(blob);
-    }, "image/webp", quality);
-  });
+async function encodeImage(canvas: HTMLCanvasElement, quality: number) {
+  const webp = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/webp", quality));
+  if (webp?.type === "image/webp") return webp;
+  const jpeg = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
+  if (!jpeg) throw new Error("사진을 생성하지 못했어요. 더 작은 사진으로 다시 시도해 주세요.");
+  if (jpeg.type !== "image/jpeg") throw new Error("이 브라우저에서 사진을 압축할 수 없어요.");
+  return jpeg;
 }
 
-export async function compressImageToWebp(source: File): Promise<CompressedImage> {
+export async function compressImageForUpload(source: File): Promise<CompressedImage> {
   if (!source.type.startsWith("image/")) throw new Error("이미지 파일을 선택해 주세요.");
   if (source.type === "image/webp" && source.size <= TARGET_BYTES) {
     const image = await loadImage(source);
@@ -61,15 +58,16 @@ export async function compressImageToWebp(source: File): Promise<CompressedImage
     canvas.height = height;
     context.imageSmoothingEnabled = true;
     context.imageSmoothingQuality = "high";
-    context.clearRect(0, 0, width, height);
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, width, height);
     context.drawImage(image, 0, 0, width, height);
 
     for (const quality of QUALITY_STEPS) {
-      const blob = await toWebp(canvas, quality);
+      const blob = await encodeImage(canvas, quality);
       if (blob.size <= TARGET_BYTES) {
         const baseName = source.name.replace(/\.[^.]+$/, "") || "proof";
         return {
-          file: new File([blob], `${baseName}.webp`, { type: "image/webp", lastModified: Date.now() }),
+          file: new File([blob], `${baseName}.${blob.type === "image/webp" ? "webp" : "jpg"}`, { type: blob.type, lastModified: Date.now() }),
           originalBytes: source.size,
           width,
           height,
@@ -77,8 +75,8 @@ export async function compressImageToWebp(source: File): Promise<CompressedImage
       }
     }
 
-    width = Math.max(320, Math.round(width * 0.8));
-    height = Math.max(320, Math.round(height * 0.8));
+    width = Math.max(1, Math.round(width * 0.8));
+    height = Math.max(1, Math.round(height * 0.8));
   }
 
   throw new Error("사진을 3MB 이하로 줄이지 못했어요. 다른 사진을 선택해 주세요.");

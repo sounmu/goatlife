@@ -1,5 +1,6 @@
 "use server";
 
+import { normalizeProofImage } from "@/lib/server-image";
 import { hasPhotoConsent } from "@/lib/photo-consent";
 import { photoRetentionEnded } from "@/lib/photo-retention";
 import { revalidatePath } from "next/cache";
@@ -12,7 +13,7 @@ import { randomToken } from "@/lib/security";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { fieldErrors, proofSchema } from "@/lib/validation";
 
-const allowedTypes = new Map([["image/webp", "webp"]]);
+const allowedTypes = new Set(["image/webp", "image/jpeg"]);
 
 export async function createProof(_: ActionState, formData: FormData): Promise<ActionState> {
   const session = await requireParticipant();
@@ -26,7 +27,7 @@ export async function createProof(_: ActionState, formData: FormData): Promise<A
   });
   if (!parsed.success) return { fieldErrors: fieldErrors(parsed.error) };
   if (!(image instanceof File) || image.size === 0) return { fieldErrors: { image: ["인증 사진을 선택해 주세요."] } };
-  if (!allowedTypes.has(image.type)) return { fieldErrors: { image: ["사진을 WebP로 변환한 뒤 올려 주세요."] } };
+  if (!allowedTypes.has(image.type)) return { fieldErrors: { image: ["JPEG 또는 WebP 사진을 올려 주세요."] } };
   if (image.size > appConfig.maxUploadBytes) return { fieldErrors: { image: ["압축된 사진은 3MB 이하여야 해요."] } };
   if (session.participantStatus !== "ACTIVE") return { message: "현재 진행 중인 참가자만 인증할 수 있어요." };
   if (parsed.data.proofType === "MORNING" && parsed.data.imageSource !== "CAMERA") {
@@ -75,11 +76,15 @@ export async function createProof(_: ActionState, formData: FormData): Promise<A
     .maybeSingle();
   if (existing) return { message: proofType === "MORNING" ? "오늘 아침 인증은 이미 완료했어요." : "오늘 랜덤 미션은 이미 완료했어요." };
 
-  const extension = allowedTypes.get(image.type);
-  const storagePath = `${session.challengeId}/${session.id}/${today}-${proofType.toLowerCase()}-${randomToken(8)}.${extension}`;
-  const bytes = await image.arrayBuffer();
+  let bytes: Buffer;
+  try {
+    bytes = await normalizeProofImage(Buffer.from(await image.arrayBuffer()), appConfig.maxUploadBytes);
+  } catch {
+    return { fieldErrors: { image: ["사진을 처리하지 못했어요. 다른 사진으로 다시 시도해 주세요."] } };
+  }
+  const storagePath = `${session.challengeId}/${session.id}/${today}-${proofType.toLowerCase()}-${randomToken(8)}.webp`;
   const { error: uploadError } = await supabase.storage.from(appConfig.proofBucket).upload(storagePath, bytes, {
-    contentType: image.type,
+    contentType: "image/webp",
     upsert: false,
   });
   if (uploadError) return { message: "사진 업로드에 실패했어요. 잠시 후 다시 시도해 주세요." };
